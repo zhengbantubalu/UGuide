@@ -16,6 +16,13 @@ export default defineConfig({
   },
   server: {
     port: 80,
-    host: '0.0.0.0'
+    host: '0.0.0.0',
+    proxy: {
+      '/api': {
+        target: 'http://47.93.189.31:8080',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '/mapline/api')
+      }
+    }
   }
 })
