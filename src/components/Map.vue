@@ -34,9 +34,24 @@ export default {
     // 加载并渲染地图
     async loadAndRenderMap() {
       try {
-        // 加载道路 GeoJSON 文件
-        const roadResponse = await fetch('/北邮全图.geojson');
+        // 发起网络请求
+        const roadResponse = await fetch('api/maps');
+
+        // 检查响应状态
+        if (!roadResponse.ok) {
+          throw new Error(`网络请求失败，状态码: ${roadResponse.status}`);
+        }
+
+        // 解析响应数据
         const roadGeoJSON = await roadResponse.json();
+        console.log('获取到的 roadGeoJSON:', roadGeoJSON);
+
+        // 过滤掉 type 为 Point 的 Feature 对象
+        if (roadGeoJSON.features) {
+          roadGeoJSON.features = roadGeoJSON.features.filter(feature => {
+            return feature.geometry && feature.geometry.type !== 'Point';
+          });
+        }
 
         // 注册地图
         echarts.registerMap('road', roadGeoJSON);
@@ -96,7 +111,9 @@ export default {
         this.chart.setOption(option);
 
       } catch (error) {
-        console.error('Error loading map:', error);
+
+        console.error('加载地图时出错:', error);
+        // 这里可以添加更多错误处理逻辑，比如显示错误提示给用户
       }
     },
 
