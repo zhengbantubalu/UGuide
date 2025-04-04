@@ -18,11 +18,16 @@ export default defineConfig({
     port: 80,
     host: '0.0.0.0',
     proxy: {
-      '/api': {
+      '/api_sb': {
         target: 'http://47.93.189.31:8080',
         changeOrigin: true,
-        rewrite: (path) => path.replace(/^\/api/, '/mapline/api')
-      }
+        rewrite: (path) => path.replace(/^\/api_sb/, '/mapline/api')
+      },
+      '/api_fa': {
+        target: 'http://47.93.189.31:8081',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api_fa/, '/')
+      },
     }
   }
 })

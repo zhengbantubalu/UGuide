@@ -1,8 +1,12 @@
 <template>
   <div class="map-container">
     <div id="map"></div>
-    <div v-if="userPosition" class="location-info">
-      当前位置：经度 {{ userPosition[0].toFixed(6) }}，纬度 {{ userPosition[1].toFixed(6) }}
+    <div v-if="userPosition && pathInfo" class="dev-info">
+      <p>当前位置：经度 {{ userPosition[0].toFixed(4) }}，纬度 {{ userPosition[1].toFixed(4) }}</p>
+      <p>起点：{{ pathInfo.start_location.name }}</p>
+      <p>途径点：{{ pathInfo.visit_order.slice(0, -1).join('，') }}</p>
+      <p>终点：{{ pathInfo.end_location }}</p>
+      <p>总路径长度：{{ pathInfo.distance.toFixed(0) }} 米</p>
     </div>
   </div>
 </template>
@@ -16,13 +20,13 @@ export default {
     return {
       chart: null,
       userPosition: null,
-      // 添加地图边界范围
       mapBounds: {
         minLng: 116.3490,
         maxLng: 116.3547,
         minLat: 39.9583,
         maxLat: 39.9635
-      }
+      },
+      pathInfo: null // 新增数据属性存储路径信息
     };
   },
   async mounted() {
@@ -35,7 +39,7 @@ export default {
     async loadAndRenderMap() {
       try {
         // 发起网络请求
-        const roadResponse = await fetch('api/maps');
+        const roadResponse = await fetch('api_sb/maps');
 
         // 检查响应状态
         if (!roadResponse.ok) {
@@ -44,7 +48,7 @@ export default {
 
         // 解析响应数据
         const roadGeoJSON = await roadResponse.json();
-        console.log('获取到的 roadGeoJSON:', roadGeoJSON);
+        // console.log('获取到的 roadGeoJSON:', roadGeoJSON);
 
         // 过滤掉 type 为 Point 的 Feature 对象
         if (roadGeoJSON.features) {
@@ -52,6 +56,62 @@ export default {
             return feature.geometry && feature.geometry.type !== 'Point';
           });
         }
+
+        // 发起路径请求
+        const requestData = {
+          "start": {
+            "name": "西门"
+          },
+          "destinations": [
+            { "name": "教一楼" },
+            { "name": "教二楼" },
+            { "name": "教三楼" },
+            { "name": "教四楼" },
+            { "name": "主教学楼" },
+            { "name": "网络中心" },
+            { "name": "校训石" },
+            { "name": "科研楼" },
+            { "name": "北邮科技酒店" },
+            { "name": "篮球场" },
+            { "name": "麦当劳" },
+            { "name": "图书馆" },
+            { "name": "学6公寓" },
+            { "name": "主席像" },
+            { "name": "东门" },
+            { "name": "田径场" },
+          ],
+          "algorithm": "dijkstra"
+        };
+        const pathResponse = await fetch('/api_fa/path/multi', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(requestData)
+        });
+
+        if (!pathResponse.ok) {
+          throw new Error(`请求最优路径失败，状态码: ${pathResponse.status}`);
+        }
+
+        // 解析响应数据
+        const pathData = await pathResponse.json();
+        console.log('获取到的最优路径数据:', pathData);
+
+        // 存储路径信息
+        this.pathInfo = {
+          start_location: pathData.start_location,
+          visit_order: pathData.visit_order,
+          distance: pathData.distance,
+          end_location: pathData.visit_order[pathData.visit_order.length - 1]
+        };
+
+        const pathCoordinates = pathData.path.map(point => [point.longitude, point.latitude]);
+        // 打印 pathCoordinates
+        console.log('提取的路径坐标:', pathCoordinates);
+
+        // 获取目的地坐标
+        const destination = pathCoordinates[pathCoordinates.length - 1];
 
         // 注册地图
         echarts.registerMap('road', roadGeoJSON);
@@ -68,6 +128,21 @@ export default {
           tooltip: {
             trigger: 'item',
             formatter: '{b}'
+          },
+          // 添加 geo 组件配置
+          geo: {
+            map: 'road',
+            roam: false, // 是否开启鼠标缩放和平移漫游
+            itemStyle: {
+              areaColor: '#f4f4f4',
+              borderColor: '#333',
+              borderWidth: 1
+            },
+            emphasis: {
+              itemStyle: {
+                areaColor: '#e0e0e0'
+              }
+            }
           },
           series: [
             {
@@ -87,10 +162,10 @@ export default {
                 }
               },
               markPoint: {
-                symbol: 'circle',
-                symbolSize: 20,
+                symbolSize: 30,
+                symbol: 'pin', // 使用 pin 图标
                 itemStyle: {
-                  color: '#ff0000'
+                  color: '#00aa00'
                 },
                 label: {
                   position: 'top',
@@ -98,12 +173,52 @@ export default {
                 },
                 data: [
                   {
-                    name: '您的位置（假的，定位不准，硬编码）',
+                    name: '我的位置（硬编码）',
                     coord: this.clampPosition(this.userPosition) // 仅在显示红点时处理坐标
                   }
                 ]
               }
-            }
+            },
+            // 新增系列用于显示路径
+            {
+              name: 'Path',
+              type: 'lines',
+              coordinateSystem: 'geo',
+              polyline: true,
+              data: [{
+                coords: pathCoordinates
+              }],
+              lineStyle: {
+                color: '#0000ff', // 路径颜色
+                width: 5,         // 路径宽度
+                opacity: 0.8      // 路径透明度
+              },
+              effect: {
+                show: true,
+                period: 4,
+                trailWidth: 5,
+                color: '#00ffff',
+                symbolSize: 10,
+                symbol: 'circle',
+              },
+              markPoint: {
+                symbolSize: 30,
+                symbol: 'pin', // 使用 pin 图标
+                itemStyle: {
+                  color: '#ee0000'
+                },
+                label: {
+                  position: 'top',
+                  color: '#fff'
+                },
+                data: [
+                  {
+                    name: '目的地',
+                    coord: destination
+                  }
+                ]
+              }
+            },
           ]
         };
 
@@ -119,7 +234,7 @@ export default {
 
     // 获取用户地理位置
     async getUserLocation() {
-      this.userPosition = [116.3495, 39.9606];
+      this.userPosition = [116.349054, 39.959761];
       return;//不定位
       return new Promise((resolve, reject) => {
         if (navigator.geolocation) {
@@ -171,10 +286,10 @@ export default {
 
 #map {
   width: 100%;
-  height: 80vh;
+  height: 70vh;
 }
 
-.location-info {
+.dev-info {
   text-align: center;
   font-size: 16px;
   color: #333;

@@ -10,7 +10,7 @@ const spotList = ref([])
 onMounted(async () => {
     try {
         // 发起 HTTP 请求
-        const response = await fetch('/api/scs')
+        const response = await fetch('/api_sb/scs')
         if (!response.ok) {
             throw new Error('网络响应失败')
         }
