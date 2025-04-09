@@ -71,7 +71,7 @@ export default {
             { "name": "网络中心" },
             { "name": "校训石" },
             { "name": "科研楼" },
-            { "name": "北邮科技酒店" },
+            { "name": "北邮科技大厦" },
             { "name": "篮球场" },
             { "name": "麦当劳" },
             { "name": "图书馆" },
@@ -280,13 +280,14 @@ export default {
 
 <style>
 .map-container {
-  margin-top: 30px;
+  padding-top: 20px;
   width: 100%;
+  height: 65vh;
 }
 
 #map {
   width: 100%;
-  height: 70vh;
+  height: 100%;
 }
 
 .dev-info {
