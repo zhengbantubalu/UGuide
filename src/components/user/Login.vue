@@ -4,63 +4,78 @@
         <div class="title">UGuide</div>
     </div>
     <van-form @submit="onSubmit" class="form">
-        <van-cell-group inset>
+        <van-cell-group inset class="input-container">
             <van-field v-model="username" name="用户名" label="用户名" placeholder="用户名"
                 :rules="[{ required: true, message: '请填写用户名' }]" />
             <van-field v-model="password" type="password" name="密码" label="密码" placeholder="密码"
                 :rules="[{ required: true, message: '请填写密码' }]" />
         </van-cell-group>
         <div class="button-container">
-            <van-button round block type="primary" native-type="button" to="/register">注册</van-button>
+            <van-button round block type="primary" native-type="button"
+                :to="{ name: 'Register', query: { username: username, password: password } }">注册</van-button>
             <van-button round block type="primary" native-type="submit">登录</van-button>
         </div>
     </van-form>
 </template>
 
 <script setup>
+import axios from 'axios';
 import { ref } from 'vue';
+import { useRoute, useRouter } from 'vue-router';
+import { showSuccessToast, showFailToast } from 'vant';
 
+const router = useRouter();
 const username = ref('');
 const password = ref('');
+
 const onSubmit = async (values) => {
-    console.log('submit', values);
     try {
-        const response = await axios.post('/api/login', {
-            username: this.username,
-            password: this.password
+        const response = await axios.post('/api_sb/users/login', {
+            username: username.value,
+            password: password.value
         });
-        const { token } = response.data;
-        window.localStorage.setItem("token", token);
+        const { success, message, token } = response.data;
+        if (success) {
+            // window.localStorage.setItem('token', token);
+            showSuccessToast(message);
+            router.back();
+        } else {
+            showFailToast(message);
+        }
     } catch (error) {
-        console.error('登录失败', error);
+        console.error('登录时出错:', error);
     }
 };
 </script>
 
 <style scoped>
 .image-title-container {
-    margin-top: 10vh;
+    padding-top: 50px;
     text-align: center;
-    margin-bottom: 20px;
 }
 
 .logo-image {
-    width: 100px;
-    height: 100px;
-    margin-bottom: 10px;
+    width: 90px;
+    height: 90px;
 }
 
 .title {
-    font-size: 24px;
+    font-size: 20px;
 }
 
 .form {
-    padding: 10px;
-    margin-top: 10vh;
+    padding: 0px 10px;
+}
+
+.input-container {
+    height: 200px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .button-container {
-    margin: 50px 20px;
+    padding: 0px 20px;
     display: flex;
     justify-content: space-between;
     gap: 10px;

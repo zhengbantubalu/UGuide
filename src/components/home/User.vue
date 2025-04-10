@@ -24,8 +24,7 @@ const goToLogin = () => {
 .user-info {
     display: flex;
     align-items: center;
-    margin-top: 20px;
-    padding: 10px;
+    padding: 30px 10px 10px 10px;
     height: 120px;
 }
 

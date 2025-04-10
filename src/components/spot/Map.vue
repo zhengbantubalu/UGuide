@@ -13,6 +13,7 @@
 
 <script>
 import * as echarts from 'echarts';
+import axios from 'axios';
 
 export default {
   name: 'App',
@@ -38,17 +39,9 @@ export default {
     // 加载并渲染地图
     async loadAndRenderMap() {
       try {
-        // 发起网络请求
-        const roadResponse = await fetch('api_sb/maps');
-
-        // 检查响应状态
-        if (!roadResponse.ok) {
-          throw new Error(`网络请求失败，状态码: ${roadResponse.status}`);
-        }
-
-        // 解析响应数据
-        const roadGeoJSON = await roadResponse.json();
-        // console.log('获取到的 roadGeoJSON:', roadGeoJSON);
+        // 发起道路请求
+        const roadResponse = await axios.get('api_sb/maps');
+        const roadGeoJSON = roadResponse.data;
 
         // 过滤掉 type 为 Point 的 Feature 对象
         if (roadGeoJSON.features) {
@@ -82,20 +75,8 @@ export default {
           ],
           "algorithm": "dijkstra"
         };
-        const pathResponse = await fetch('/api_fa/path/multi', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify(requestData)
-        });
-
-        if (!pathResponse.ok) {
-          throw new Error(`请求最优路径失败，状态码: ${pathResponse.status}`);
-        }
-
-        // 解析响应数据
-        const pathData = await pathResponse.json();
+        const pathResponse = await axios.post('/api_fa/path/multi', requestData);
+        const pathData = pathResponse.data;
         console.log('获取到的最优路径数据:', pathData);
 
         // 存储路径信息

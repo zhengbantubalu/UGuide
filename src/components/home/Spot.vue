@@ -17,7 +17,8 @@
 </template>
 
 <script setup>
-import { ref } from "vue"
+import { ref } from 'vue';
+import axios from 'axios';
 
 const spotList = ref([]);
 const loading = ref(false);
@@ -26,11 +27,8 @@ const finished = ref(false);
 const onLoad = async () => {
     loading.value = true;
     try {
-        const response = await fetch('/api_sb/scs')
-        if (!response.ok) {
-            throw new Error('网络响应失败')
-        }
-        const data = await response.json()
+        const response = await axios.get('/api_sb/scs');
+        const data = response.data;
         spotList.value = data.map(item => ({
             text: item.name,
             info: item.info || '暂无信息',
@@ -42,7 +40,7 @@ const onLoad = async () => {
             finished.value = true;
         }
     } catch (error) {
-        console.error('获取数据时出错:', error)
+        console.error('获取数据时出错:', error);
     } finally {
         loading.value = false;
     }
