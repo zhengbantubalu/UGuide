@@ -40,7 +40,7 @@ export default {
     async loadAndRenderMap() {
       try {
         // 发起道路请求
-        const roadResponse = await axios.get('api_sb/maps');
+        const roadResponse = await axios.get('api/data/maps');
         const roadGeoJSON = roadResponse.data;
 
         // 过滤掉 type 为 Point 的 Feature 对象
@@ -75,7 +75,7 @@ export default {
           ],
           "algorithm": "dijkstra"
         };
-        const pathResponse = await axios.post('/api_fa/path/multi', requestData);
+        const pathResponse = await axios.post('/api/arith/path/multi', requestData);
         const pathData = pathResponse.data;
         console.log('获取到的最优路径数据:', pathData);
 
@@ -274,7 +274,6 @@ export default {
 .dev-info {
   text-align: center;
   font-size: 16px;
-  color: #333;
-  padding: 10px 0;
+  padding: 20px;
 }
 </style>

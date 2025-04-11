@@ -1,6 +1,6 @@
 <template>
     <div class="image-title-container">
-        <img src="/bupt.ico" alt="Logo" class="logo-image">
+        <van-image class="logo-image" round src="http://47.93.189.31/res/bupt.ico" alt="Logo" />
         <div class="title">UGuide</div>
     </div>
     <van-form @submit="onSubmit" class="form">
@@ -21,7 +21,7 @@
 <script setup>
 import axios from 'axios';
 import { ref } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+import { useRouter } from 'vue-router';
 import { showSuccessToast, showFailToast } from 'vant';
 
 const router = useRouter();
@@ -30,20 +30,22 @@ const password = ref('');
 
 const onSubmit = async (values) => {
     try {
-        const response = await axios.post('/api_sb/users/login', {
+        const response = await axios.post('/api/data/users/login', {
             username: username.value,
             password: password.value
         });
         const { success, message, token } = response.data;
         if (success) {
             // window.localStorage.setItem('token', token);
-            showSuccessToast(message);
+            window.localStorage.setItem('login', true);
+            showSuccessToast('登录成功');
             router.back();
         } else {
             showFailToast(message);
         }
     } catch (error) {
         console.error('登录时出错:', error);
+        showFailToast('登录时出错');
     }
 };
 </script>
@@ -75,7 +77,7 @@ const onSubmit = async (values) => {
 }
 
 .button-container {
-    padding: 0px 20px;
+    padding: 10px 20px;
     display: flex;
     justify-content: space-between;
     gap: 10px;

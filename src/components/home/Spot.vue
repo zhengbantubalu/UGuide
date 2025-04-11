@@ -1,10 +1,10 @@
 <template>
-    <van-list v-model:loading="loading" :finished="finished" @load="onLoad">
-        <van-cell v-for="item in spotList" :title="item.name" to="/map">
-            <div class="spot-list-item">
-                <img class="spot-image" :src="item.imgUrl" alt="景点图片">
+    <div class="page-container">
+        <van-list class="spot-list" :loading="loading" :finished="finished" @load="onLoad">
+            <div class="spot-item" v-for="item in spotList" @click="goToMap">
+                <van-image class="spot-image" :src="item.cover" fit="cover" />
                 <div class="spot-content">
-                    <div class="spot-title">{{ item.text }}</div>
+                    <div class="spot-title">{{ item.title }}</div>
                     <div class="spot-info">{{ item.info }}</div>
                     <div class="spot-tags">
                         <van-tag v-for="tag in item.tags" type="primary">{{ tag }}</van-tag>
@@ -12,33 +12,37 @@
                 </div>
                 <div class="spot-score">{{ item.score }}</div>
             </div>
-        </van-cell>
-    </van-list>
+        </van-list>
+    </div>
 </template>
 
 <script setup>
 import { ref } from 'vue';
 import axios from 'axios';
+import { useRouter } from 'vue-router';
 
 const spotList = ref([]);
 const loading = ref(false);
 const finished = ref(false);
+const router = useRouter();
+
+const goToMap = () => {
+    router.push('/map');
+};
 
 const onLoad = async () => {
     loading.value = true;
     try {
-        const response = await axios.get('/api_sb/scs');
+        const response = await axios.get('/api/data/scs');
         const data = response.data;
         spotList.value = data.map(item => ({
-            text: item.name,
+            title: item.name,
             info: item.info || '暂无信息',
             score: item.score,
             tags: item.tags == null ? [] : String(item.tags).split(','),
-            imgUrl: /*item.imgUr ||*/ '/bupt.ico'
+            cover: item.imgUr || 'http://47.93.189.31/res/bupt.ico'
         }));
-        if (spotList.value.length >= 40) {
-            finished.value = true;
-        }
+        finished.value = true;
     } catch (error) {
         console.error('获取数据时出错:', error);
     } finally {
@@ -48,11 +52,25 @@ const onLoad = async () => {
 </script>
 
 <style scoped>
-.spot-list-item {
+.page-container {
+    background-color: #f0f0f0;
+    padding: 5px 5px 100px 5px;
+}
+
+.spot-list {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.spot-item {
     display: flex;
     align-items: center;
-    padding: 10px;
-    height: 100px;
+    padding: 0px 20px;
+    height: 120px;
+    border-radius: 10px;
+    overflow: hidden;
+    background-color: white;
 }
 
 .spot-image {

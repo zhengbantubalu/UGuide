@@ -1,6 +1,6 @@
 <template>
     <div class="image-title-container">
-        <img src="/bupt.ico" alt="Logo" class="logo-image">
+        <van-image class="logo-image" round src="http://47.93.189.31/res/bupt.ico" alt="Logo" />
         <div class="title">UGuide</div>
     </div>
     <van-form @submit="onSubmit" class="form">
@@ -46,7 +46,7 @@ onMounted(() => {
 
 const onSubmit = async (values) => {
     try {
-        const response = await axios.post('/api_sb/users/register', {
+        const response = await axios.post('/api/data/users/register', {
             username: username.value,
             password: password.value
         });
@@ -59,6 +59,7 @@ const onSubmit = async (values) => {
         }
     } catch (error) {
         console.error('注册时出错:', error);
+        showFailToast('注册时出错');
     }
 };
 </script>
@@ -90,7 +91,7 @@ const onSubmit = async (values) => {
 }
 
 .button-container {
-    padding: 0px 20px;
+    padding: 10px 20px;
     display: flex;
     justify-content: space-between;
     gap: 10px;

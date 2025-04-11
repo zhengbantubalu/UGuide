@@ -6,6 +6,8 @@ import User from '../components/home/User.vue';
 import Map from '../components/spot/Map.vue';
 import Login from '../components/user/Login.vue';
 import Register from '../components/user/Register.vue';
+import UserInfo from '../components/user/UserInfo.vue';
+import Test from '../components/Test.vue';
 
 const routes = [
     {
@@ -48,6 +50,16 @@ const routes = [
         path: '/register',
         name: 'Register',
         component: Register
+    },
+    {
+        path: '/user_info',
+        name: 'UserInfo',
+        component: UserInfo
+    },
+    {
+        path: '/test',
+        name: 'Test',
+        component: Test
     }
 ];
 
