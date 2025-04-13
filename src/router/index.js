@@ -1,18 +1,21 @@
 import { createRouter, createWebHistory } from 'vue-router';
 import Home from '../components/home/Home.vue';
-import Spot from '../components/home/Spot.vue';
 import Diary from '../components/home/Diary.vue';
+import Spot from '../components/home/Spot.vue';
+import Go from '../components/home/Go.vue';
+import ToGo from '../components/home/ToGo.vue';
 import User from '../components/home/User.vue';
 import Map from '../components/spot/Map.vue';
 import Login from '../components/user/Login.vue';
 import Register from '../components/user/Register.vue';
 import UserInfo from '../components/user/UserInfo.vue';
+import DiaryDetail from '../components/diary/DiaryDetial.vue';
 import Test from '../components/Test.vue';
 
 const routes = [
     {
         path: '/',
-        redirect: '/home/spot'
+        redirect: '/home/diary'
     },
     {
         path: '/home',
@@ -20,14 +23,24 @@ const routes = [
         component: Home,
         children: [
             {
+                path: 'diary',
+                name: 'Diary',
+                component: Diary
+            },
+            {
                 path: 'spot',
                 name: 'Spot',
                 component: Spot
             },
             {
-                path: 'diary',
-                name: 'Diary',
-                component: Diary
+                path: 'go',
+                name: 'Go',
+                component: Map
+            },
+            {
+                path: 'togo',
+                name: 'ToGo',
+                component: ToGo
             },
             {
                 path: 'user',
@@ -52,14 +65,19 @@ const routes = [
         component: Register
     },
     {
-        path: '/user_info',
+        path: '/user/info',
         name: 'UserInfo',
         component: UserInfo
     },
     {
+        path: '/diary/detail',
+        name: 'DiaryDetail',
+        component: DiaryDetail
+    },
+    {
         path: '/test',
         name: 'Test',
-        component: Test
+        component: Diary
     }
 ];
 

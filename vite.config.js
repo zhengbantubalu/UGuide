@@ -1,11 +1,9 @@
 import { defineConfig } from 'vite';
 import vue from '@vitejs/plugin-vue';
-import vueDevTools from 'vite-plugin-vue-devtools';
 
 export default defineConfig({
   plugins: [
-    vue(),
-    vueDevTools(),
+    vue()
   ],
   server: {
     port: 80,
@@ -21,10 +19,10 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace('/api/arith', '/')
       },
-      '/api/res': {
-        target: 'http://47.93.189.31:80',
+      '/api/upload': {
+        target: 'http://47.93.189.31:8082',
         changeOrigin: true,
-        rewrite: (path) => path.replace('/api/res', '/res')
+        rewrite: (path) => path.replace('/api/upload', '/upload')
       }
     }
   }

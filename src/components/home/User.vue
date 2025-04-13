@@ -1,29 +1,55 @@
 <template>
     <div class="user-info" @click="goToLogin">
-        <van-image round class="user-avatar" src="http://47.93.189.31/res/bupt.ico" alt="用户头像" />
-        <div class="user-name">{{ isLoggedIn ? '已登录' : '点击登录' }}</div>
+        <van-image round class="user-avatar" src="http://47.93.189.31/res/bupt.ico" />
+        <div class="user-name">{{ userName }}</div>
     </div>
-    <van-grid :column-num="3" class="grid">
-        <van-grid-item icon="clock-o" text="历史" to="/test" />
-        <van-grid-item icon="star-o" text="收藏" />
-        <van-grid-item icon="records-o" text="日记" />
+    <van-grid :column-num="2" class="grid">
+        <van-grid-item icon="clock-o" text="浏览历史" to="/test" />
+        <van-grid-item icon="star-o" text="游记收藏" to="/test" />
     </van-grid>
+    <Diary />
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
+import Diary from './Diary.vue';
 
 const router = useRouter();
 const isLoggedIn = ref(false);
+const userName = ref('');
 
-onMounted(() => {
+onMounted(async () => {
     isLoggedIn.value = window.localStorage.getItem('login') === 'true';
+    if (isLoggedIn.value) {
+        try {
+            const token = window.localStorage.getItem('token');
+            const response = await axios.get('/api/data/users/info', {
+                headers: {
+                    Authorization: `${token}`
+                }
+            });
+            const { success, data } = response.data;
+            if (success) {
+                userName.value = data.username;
+            } else {
+                window.localStorage.setItem('login', false);
+                isLoggedIn.value = false;
+                userName.value = '点击登录';
+            }
+        } catch (error) {
+            console.error('获取用户信息时出错:', error);
+        }
+    }
+    else {
+        userName.value = '点击登录';
+    }
 });
 
 const goToLogin = () => {
     if (isLoggedIn.value) {
-        router.push('/user_info');
+        router.push('/user/info');
     } else {
         router.push('/login');
     }

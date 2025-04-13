@@ -1,6 +1,6 @@
 <template>
     <div class="image-title-container">
-        <van-image class="logo-image" round src="http://47.93.189.31/res/bupt.ico" alt="Logo" />
+        <van-image class="logo-image" round src="http://47.93.189.31/res/bupt.ico" />
         <div class="title">UGuide</div>
     </div>
     <van-form @submit="onSubmit" class="form">

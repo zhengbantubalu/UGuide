@@ -1,6 +1,6 @@
 <template>
     <div class="image-title-container">
-        <van-image class="logo-image" round src="http://47.93.189.31/res/bupt.ico" alt="Logo" />
+        <van-image class="logo-image" round src="http://47.93.189.31/res/bupt.ico" />
         <div class="title">UGuide</div>
     </div>
     <van-form @submit="onSubmit" class="form">
@@ -36,9 +36,9 @@ const onSubmit = async (values) => {
         });
         const { success, message, token } = response.data;
         if (success) {
-            // window.localStorage.setItem('token', token);
+            window.localStorage.setItem('token', token);
             window.localStorage.setItem('login', true);
-            showSuccessToast('登录成功');
+            showSuccessToast(message);
             router.back();
         } else {
             showFailToast(message);
