@@ -11,7 +11,7 @@
                 :rules="[{ required: true, message: '请填写密码' }]" />
         </van-cell-group>
         <div class="button-container">
-            <van-button round block type="primary" native-type="button"
+            <van-button round block plain type="primary" native-type="button"
                 :to="{ name: 'Register', query: { username: username, password: password } }">注册</van-button>
             <van-button round block type="primary" native-type="submit">登录</van-button>
         </div>

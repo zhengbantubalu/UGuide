@@ -14,13 +14,13 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace('/api/data', '/mapline/api')
       },
-      '/api/arith': {
+      '/api/arith/path': {
         target: 'http://47.93.189.31:8081',
         changeOrigin: true,
-        rewrite: (path) => path.replace('/api/arith', '/')
+        rewrite: (path) => path.replace('/api/arith/path', '/path')
       },
       '/api/upload': {
-        target: 'http://47.93.189.31:8082',
+        target: 'http://47.93.189.31:8090',
         changeOrigin: true,
         rewrite: (path) => path.replace('/api/upload', '/upload')
       }

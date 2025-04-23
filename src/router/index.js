@@ -1,16 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import Home from '../components/home/Home.vue';
-import Diary from '../components/home/Diary.vue';
-import Spot from '../components/home/Spot.vue';
-import Go from '../components/home/Go.vue';
-import ToGo from '../components/home/ToGo.vue';
-import User from '../components/home/User.vue';
+import Home from '../components/Home.vue';
+import Diary from '../components/diary/Diary.vue';
+import Spot from '../components/spot/Spot.vue';
+import Go from '../components/go/Go.vue';
+import ToGo from '../components/togo/ToGo.vue';
+import User from '../components/user/User.vue';
 import Map from '../components/spot/Map.vue';
 import Login from '../components/user/Login.vue';
 import Register from '../components/user/Register.vue';
 import UserInfo from '../components/user/UserInfo.vue';
 import DiaryDetail from '../components/diary/DiaryDetial.vue';
-import Test from '../components/Test.vue';
 
 const routes = [
     {
@@ -33,11 +32,6 @@ const routes = [
                 component: Spot
             },
             {
-                path: 'go',
-                name: 'Go',
-                component: Map
-            },
-            {
                 path: 'togo',
                 name: 'ToGo',
                 component: ToGo
@@ -48,6 +42,11 @@ const routes = [
                 component: User
             }
         ]
+    },
+    {
+        path: '/go',
+        name: 'Go',
+        component: Go
     },
     {
         path: '/map',
@@ -77,7 +76,7 @@ const routes = [
     {
         path: '/test',
         name: 'Test',
-        component: Diary
+        component: Go
     }
 ];
 

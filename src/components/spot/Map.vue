@@ -232,36 +232,27 @@ const renderMap = async () => {
                 formatter: '{b}'
             },
             geo: {
+                name: 'Road',
+                type: 'map',
                 map: 'road',
-                roam: false,
+                // roam: true,
                 itemStyle: {
-                    areaColor: '#f4f4f4',
-                    borderColor: '#333',
-                    borderWidth: 1
+                    areaColor: '#f4f4f4', // 区域填充颜色
+                    borderColor: '#333',  // 道路颜色
+                    borderWidth: 1        // 道路宽度
                 },
                 emphasis: {
                     itemStyle: {
-                        areaColor: '#e0e0e0'
+                        borderWidth: 3,      // 鼠标悬停时的道路宽度
+                        borderColor: '#ffaa00' // 鼠标悬停时的道路颜色
                     }
                 }
             },
             series: [
                 {
-                    name: 'Road',
-                    type: 'map',
-                    map: 'road',
-                    // roam: true,
-                    itemStyle: {
-                        areaColor: '#f4f4f4', // 区域填充颜色
-                        borderColor: '#333',  // 道路颜色
-                        borderWidth: 1        // 道路宽度
-                    },
-                    emphasis: {
-                        itemStyle: {
-                            borderWidth: 3,      // 鼠标悬停时的道路宽度
-                            borderColor: '#ffaa00' // 鼠标悬停时的道路颜色
-                        }
-                    },
+                    name: 'Points',
+                    type: 'lines',
+                    coordinateSystem: 'geo',
                     markPoint: {
                         symbolSize: 12,
                         symbol: 'circle',

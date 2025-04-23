@@ -14,7 +14,7 @@
 import { ref, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import axios from 'axios';
-import Diary from './Diary.vue';
+import Diary from '../diary/Diary.vue';
 
 const router = useRouter();
 const isLoggedIn = ref(false);

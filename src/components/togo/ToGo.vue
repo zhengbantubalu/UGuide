@@ -11,9 +11,9 @@
                     </div>
                 </div>
                 <div class="arrow-button-group">
-                    <van-button class="arrow-button" plain type="primary" @click.stop="moveUp(index)"
-                        :disabled="index === 0" icon="arrow-up" />
-                    <van-button class="arrow-button" plain type="primary" @click.stop="moveDown(index)"
+                    <van-button class="arrow-button" plain type="primary" @click="moveUp(index)" :disabled="index === 0"
+                        icon="arrow-up" />
+                    <van-button class="arrow-button" plain type="primary" @click="moveDown(index)"
                         :disabled="index === spotList.length - 1" icon="arrow-down" />
                 </div>
             </div>
