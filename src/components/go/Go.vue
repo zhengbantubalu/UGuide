@@ -1,19 +1,12 @@
 <template>
     <div class="page-container">
-        <div class="add-button-container" :style="{
-            transform: `scale(${scale})`,
-            transition: 'transform 0.5s ease'
-        }">
-            <van-button class="add-button" round type="primary" icon="plus" @click="clickAddDestination" />
-            <p class="selected-name">{{ selectedName ? selectedName : '请选中目的地' }}</p>
-        </div>
         <div class="map-container">
             <div id="map" class="map" :style="{
                 transform: `scale(${scale}) translateY(${translateY}%)`,
                 transition: 'transform 0.5s ease'
             }"></div>
         </div>
-        <Drawer ref="drawerRef" @position-change="handleDrawerPositionChange" @update-path="updatePath" />
+        <Drawer ref="drawerRef" @position-change="drawerPositionChange" @update-path="updatePath" />
     </div>
 </template>
 
@@ -23,9 +16,8 @@ import { fetchMapJson } from '/src/api/map';
 import * as echarts from 'echarts';
 import Drawer from './Drawer.vue';
 
-const positions = [15, 50, 95];
 const defaultCenter = ref([116.3518, 39.9582]);
-const bigCenter = ref([116.3519, 39.9603]);
+const bigCenter = ref([116.3519, 39.96]);
 const defaultZoom = ref(0.9);
 const bigZoom = ref(1.1);
 const scale = ref(1);
@@ -36,7 +28,6 @@ const buildingGeoJSON = ref(null);
 const pointGeoJSON = ref(null);
 const congestionIndex = ref(1);
 const congestionColor = ['#00ff00', '#ffcc00', '#ff0000'];
-const selectedName = ref(null);
 const drawerRef = ref(null);
 
 const pointTypeToTag = {
@@ -46,19 +37,22 @@ const pointTypeToTag = {
     'Canteen': '餐厅',
     'Shop': '商店',
     'ElecParkSpot': '停车点',
-    'Gate': '大门'
+    'Gate': '大门',
+    'Dormitory': '宿舍'
 };
 
-const clickAddDestination = () => {
-    if (selectedName.value) {
-        const point = pointGeoJSON.value.features.find(f => f.properties.name === selectedName.value);
-        const tag = pointTypeToTag[point.pointType] || '';
-        drawerRef.value.addToSpotList(selectedName.value, tag);
+const updateDestination = (name) => {
+    if (!name) {
+        drawerRef.value.updateDestination(null, null);
+        return;
     }
-};
+    const point = pointGeoJSON.value.features.find(f => f.properties.name === name);
+    const tag = pointTypeToTag[point.pointType];
+    drawerRef.value.updateDestination(name, tag);
+}
 
-const handleDrawerPositionChange = (newHeight) => {
-    if (newHeight === positions[0]) {
+const drawerPositionChange = (position) => {
+    if (position === 0) {
         scale.value = 1;
         translateY.value = 0;
         mapChart.value.setOption({
@@ -67,7 +61,7 @@ const handleDrawerPositionChange = (newHeight) => {
                 center: bigCenter.value
             }
         });
-    } else if (newHeight === positions[1]) {
+    } else if (position === 1) {
         scale.value = 1;
         translateY.value = 0;
         mapChart.value.setOption({
@@ -76,7 +70,7 @@ const handleDrawerPositionChange = (newHeight) => {
                 center: defaultCenter.value
             }
         });
-    } else if (newHeight === positions[2]) {
+    } else if (position === 2) {
         scale.value = 0;
         translateY.value = -30;
     }
@@ -87,8 +81,6 @@ onMounted(async () => {
     await fetchMapData();
     initMapChart();
     await renderMap();
-    drawerRef.value.addToSpotList('教三楼', '建筑');
-    drawerRef.value.addToSpotList('学6公寓', '建筑');
 });
 
 const fetchMapData = async () => {
@@ -121,9 +113,13 @@ const renderMap = async () => {
         mapChart.value.setOption({
             geo: {
                 map: 'building',
-                roam: 'move',
+                roam: true,
                 zoom: defaultZoom.value,
                 center: defaultCenter.value,
+                scaleLimit: {
+                    min: 0.9,
+                    max: 2.5
+                },
                 itemStyle: {
                     areaColor: '#edfcff',
                     borderColor: '#666666',
@@ -228,14 +224,14 @@ const renderMap = async () => {
         });
         mapChart.value.on('geoselectchanged', (params) => {
             if (params.allSelected && params.allSelected.length > 0) {
-                selectedName.value = params.allSelected[0].name[0];
+                updateDestination(params.allSelected[0].name[0]);
             } else {
-                selectedName.value = null;
+                updateDestination(null);
             }
         });
         mapChart.value.on('click', function (params) {
             if (params.seriesType === 'scatter') {
-                selectedName.value = params.name;
+                updateDestination(params.name);
             }
         });
     } catch (error) {
@@ -249,34 +245,6 @@ const renderMap = async () => {
     height: 100vh;
     background-color: rgb(246, 254, 255);
     position: relative;
-}
-
-.add-button-container {
-    position: absolute;
-    top: 20px;
-    right: 20px;
-    width: 80px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    z-index: 1;
-}
-
-.add-button {
-    height: 50px;
-    width: 50px;
-    z-index: 1;
-    box-shadow: 0 0 10px white;
-}
-
-.selected-name {
-    margin-top: 5px;
-    font-size: 12px;
-    text-shadow:
-        1px 0 0 white,
-        -1px 0 0 white,
-        0 1px 0 white,
-        0 -1px 0 white;
 }
 
 .map-container {

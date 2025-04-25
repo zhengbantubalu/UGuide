@@ -74,7 +74,6 @@ const moveDown = (index) => {
 
 <style scoped>
 .page-container {
-    background-color: #f0f0f0;
     padding: 5px 5px 100px 5px;
 }
 
@@ -93,7 +92,6 @@ const moveDown = (index) => {
     overflow: hidden;
     background-color: white;
     justify-content: space-between;
-    /* 让内容和箭头按钮分开 */
 }
 
 .spot-image {
@@ -133,7 +131,6 @@ const moveDown = (index) => {
 }
 
 .spot-item:first-child {
-    height: 150px;
     background-color: rgb(220, 255, 220);
 }
 

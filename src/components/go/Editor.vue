@@ -35,7 +35,6 @@ const handleSubmit = () => {
 .page-container {
     display: flex;
     flex-direction: column;
-    background-color: #f0f0f0;
     padding: 10px 10px 100px 10px;
 }
 

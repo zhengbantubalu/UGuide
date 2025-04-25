@@ -57,7 +57,6 @@ const onLoad = async () => {
 
 <style scoped>
 .page-container {
-    background-color: #f0f0f0;
     padding: 5px 5px 100px 5px;
 }
 

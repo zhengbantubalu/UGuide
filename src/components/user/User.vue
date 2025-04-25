@@ -1,13 +1,15 @@
 <template>
-    <div class="user-info" @click="goToLogin">
-        <van-image round class="user-avatar" src="http://47.93.189.31/res/bupt.ico" />
-        <div class="user-name">{{ userName }}</div>
+    <div class="page-container">
+        <div class="user-info" @click="goToLogin">
+            <van-image round class="user-avatar" src="http://47.93.189.31/res/bupt.ico" />
+            <div class="user-name">{{ userName }}</div>
+        </div>
+        <van-grid :column-num="2">
+            <van-grid-item icon="clock-o" text="浏览历史" to="/test" />
+            <van-grid-item icon="star-o" text="游记收藏" to="/test" />
+        </van-grid>
+        <Diary />
     </div>
-    <van-grid :column-num="2" class="grid">
-        <van-grid-item icon="clock-o" text="浏览历史" to="/test" />
-        <van-grid-item icon="star-o" text="游记收藏" to="/test" />
-    </van-grid>
-    <Diary />
 </template>
 
 <script setup>
@@ -60,8 +62,9 @@ const goToLogin = () => {
 .user-info {
     display: flex;
     align-items: center;
-    padding: 30px 10px 10px 10px;
-    height: 120px;
+    padding: 30px 10px 30px 10px;
+    height: 150px;
+    background-color: white;
 }
 
 .user-avatar {
@@ -75,9 +78,5 @@ const goToLogin = () => {
     color: black;
     font-size: 18px;
     font-weight: bold;
-}
-
-.grid {
-    margin-top: 20px;
 }
 </style>

@@ -21,7 +21,7 @@
                         <van-button class="arrow-button" plain type="primary" @click="moveDown(index)"
                             :disabled="index >= spotList.length - checkedNum - 1" icon="arrow-down" />
                     </div>
-                    <van-button class="button" plain type="primary" @click="deleteItem(index)" icon="close" />
+                    <van-button class="delete-button" plain type="primary" @click="deleteItem(index)" icon="close" />
                 </div>
             </div>
         </van-list>
@@ -31,13 +31,15 @@
 <script setup>
 import { pathPlanMulti } from '/src/api/path';
 import { ref } from 'vue';
+import { showFailToast } from 'vant';
 
 const spotList = ref([]);
 const loading = ref(false);
 const finished = ref(false);
 const checkedNum = ref(0);
 const checkboxLocked = ref(false);
-const emit = defineEmits(['update-path']);
+
+const emit = defineEmits(['update-path'], ['delete']);
 
 const addToSpotList = (name, tag) => {
     spotList.value.unshift({
@@ -47,7 +49,11 @@ const addToSpotList = (name, tag) => {
     });
 };
 
-defineExpose({ addToSpotList });
+const spotExist = (name) => {
+    return spotList.value.some(item => item.title === name);
+}
+
+defineExpose({ addToSpotList, spotExist });
 
 const onLoad = () => {
     loading.value = true;
@@ -85,9 +91,24 @@ const clickCheckbox = async (index) => {
 
 const clickPathPlanMulti = async () => {
     try {
-        const spotNames = spotList.value.map(item => item.title);
-        const response = await pathPlanMulti(spotNames);
-        emit('update-path', response.path.map(point => [point.longitude, point.latitude]));
+        const validItems = spotList.value.slice(0, spotList.value.length - checkedNum.value);
+        const spotNames = validItems.map(item => item.title);
+        if (spotNames.length < 2) {
+            showFailToast('至少两个地点');
+            return;
+        }
+        const { path, distance, visitOrder } = await pathPlanMulti(spotNames);
+        emit('update-path', path);
+        const firstItem = spotList.value[0];
+        let lastItems = [];
+        if (checkedNum.value > 0) {
+            lastItems = spotList.value.slice(-checkedNum.value);
+        }
+        const remainingItems = spotList.value.slice(1, spotList.value.length - checkedNum.value);
+        const sortedItems = visitOrder.map(name => {
+            return remainingItems.find(item => item.title === name);
+        }).filter(item => item);
+        spotList.value = [firstItem, ...sortedItems, ...lastItems];
     } catch (error) {
         console.error('路径规划时出错:', error);
     }
@@ -113,13 +134,13 @@ const deleteItem = (index) => {
     if (spotList.value[index].checked) {
         checkedNum.value--;
     }
+    emit('delete', spotList.value[index].title);
     spotList.value.splice(index, 1);
 };
 </script>
 
 <style scoped>
 .page-container {
-    background-color: #f0f0f0;
     padding: 5px 5px 100px 5px;
 }
 
@@ -186,7 +207,7 @@ const deleteItem = (index) => {
     background-color: transparent;
 }
 
-.button {
+.delete-button {
     height: 30px;
     width: 30px;
     border: none;
