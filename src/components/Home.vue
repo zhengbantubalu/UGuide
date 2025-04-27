@@ -27,7 +27,7 @@
     height: 60px;
     width: 60px;
     border-radius: 50%;
-    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2), 0 0 0 10px white;
+    box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2), 0 0 0 8px white;
     background-color: #50a7ff;
     color: white;
 }

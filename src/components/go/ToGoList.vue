@@ -33,7 +33,10 @@ import { pathPlanMulti } from '/src/api/path';
 import { ref } from 'vue';
 import { showFailToast } from 'vant';
 
-const spotList = ref([]);
+const spotList = ref([
+    { title: '学6公寓', tag: '宿舍', checked: false },
+    { title: '教三楼', tag: '建筑', checked: false }
+]);
 const loading = ref(false);
 const finished = ref(false);
 const checkedNum = ref(0);
@@ -49,11 +52,18 @@ const addToSpotList = (name, tag) => {
     });
 };
 
-const spotExist = (name) => {
+const deleteFromSpotList = (name) => {
+    const index = spotList.value.findIndex(item => item.title === name);
+    if (index !== -1) {
+        spotList.value.splice(index, 1);
+    }
+}
+
+const isSpotExist = (name) => {
     return spotList.value.some(item => item.title === name);
 }
 
-defineExpose({ addToSpotList, spotExist });
+defineExpose({ addToSpotList, deleteFromSpotList, isSpotExist });
 
 const onLoad = () => {
     loading.value = true;

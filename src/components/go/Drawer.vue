@@ -3,13 +3,24 @@
         :close-on-click-overlay="false"
         :style="{ height: `${drawerHeight}px`, transition: `${drawerTransition ? 'height 0.3s ease' : ''}` }">
         <div class="handle-bar" @touchstart="handleTouchStart" @touchmove="handleTouchMove" @touchend="handleTouchEnd">
-            <!-- <van-icon class="handle" name="wap-nav" size="25" /> -->
-            <div class="add-button-container">
-                <van-button class="add-button" round type="primary" icon="plus" @click="clickAddDestination"
-                    :disabled="!(DestinationName || DestinationTag) || DestinationExist" />
-                <p class="selected-name">{{ DestinationName ? DestinationName : '请选中目的地' }}</p>
-                <van-tag type="primary">{{ DestinationTag }}</van-tag>
-                <van-tag plain type="danger" :show="DestinationExist">已添加</van-tag>
+            <div class="add-container">
+                <van-button v-if="(!isEditing && !destinationAdded) || (isEditing && !inputName)" class="add-button"
+                    round type="primary" icon="plus" @click="clickAddDestination"
+                    :disabled="!(destinationName || destinationTag) || !destinationExist || (isEditing && !inputName)" />
+                <van-button v-else-if="(!isEditing && destinationAdded)" class="add-button" round type="primary"
+                    icon="minus" @click="clickDeleteDestination" />
+                <van-button v-else class="add-button" round type="primary" icon="success" @click="clickConfirmEdit" />
+                <div class="select-container" @click="switchToEditing">
+                    <p class="selected-name" v-if="!isEditing">{{ destinationName }}</p>
+                    <van-form v-else @submit="clickConfirmEdit">
+                        <van-field ref="inputFieldRef" class="edit-field" v-model="inputName"
+                            placeholder="请 输入/选中 目的地" />
+                    </van-form>
+                    <van-tag type="primary" :show="!isEditing && destinationExist">{{ destinationTag }}</van-tag>
+                    <van-tag plain type="danger"
+                        :show="!isEditing && destinationExist && destinationAdded">已添加</van-tag>
+                    <van-tag plain type="danger" :show="!isEditing && !destinationExist">地点不存在</van-tag>
+                </div>
             </div>
             <div class="arrow-button-container">
                 <van-icon class="arrow-button" name="arrow-up" size="25" @click="drawerUp" />
@@ -38,7 +49,7 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
+import { ref, nextTick } from 'vue';
 import Diary from '../diary/Diary.vue';
 import ToGoList from './ToGoList.vue';
 import Editor from './Editor.vue';
@@ -50,20 +61,28 @@ const positions = [154, Math.floor(window.innerHeight * 0.5),
 const drawerHeight = ref(positions[1]);
 const drawerTransition = ref(true);
 const toGoListRef = ref(null);
-const DestinationName = ref(null);
-const DestinationTag = ref(null);
-const DestinationExist = ref(false);
+const destinationName = ref(null);
+const destinationTag = ref(null);
+const destinationAdded = ref(false);
+const destinationExist = ref(true);
+const isEditing = ref(true);
+const inputName = ref('');
+const inputFieldRef = ref(null);
 
-const emit = defineEmits(['position-change'], ['update-path']);
+const emit = defineEmits(['position-change'], ['update-path'], ['select-destination']);
 
 const updateDestination = (name, tag) => {
     if (name && tag) {
-        DestinationExist.value = toGoListRef.value.spotExist(name);
+        destinationAdded.value = toGoListRef.value.isSpotExist(name);
+        isEditing.value = false;
+        destinationExist.value = true;
     } else {
-        DestinationExist.value = false;
+        destinationAdded.value = false;
+        isEditing.value = true;
+        inputName.value = '';
     }
-    DestinationName.value = name;
-    DestinationTag.value = tag;
+    destinationName.value = name;
+    destinationTag.value = tag;
 }
 
 defineExpose({ updateDestination });
@@ -73,20 +92,51 @@ const updatePath = (coordinates) => {
 }
 
 const updateExist = (name) => {
-    if (DestinationName.value === name) {
-        DestinationExist.value = false;
+    if (destinationName.value === name) {
+        destinationAdded.value = false;
     }
 }
 
+const switchToEditing = () => {
+    isEditing.value = true;
+    inputName.value = destinationExist.value ? '' : destinationName.value;
+    nextTick(() => {
+        if (inputFieldRef.value) {
+            inputFieldRef.value.focus();
+        }
+    })
+}
+
+const clickDeleteDestination = () => {
+    toGoListRef.value.deleteFromSpotList(destinationName.value);
+    destinationAdded.value = false;
+}
+
+const clickConfirmEdit = () => {
+    if (!inputName.value) {
+        return;
+    }
+    destinationAdded.value = false;
+    isEditing.value = false;
+    destinationName.value = inputName.value;
+    emit('select-destination', destinationName.value, (exists) => {
+        if (exists) {
+            destinationExist.value = true;
+            inputName.value = '';
+        } else {
+            destinationExist.value = false;
+        }
+    })
+}
+
 const clickAddDestination = () => {
-    if (DestinationName.value && DestinationTag.value) {
-        toGoListRef.value.addToSpotList(DestinationName.value, DestinationTag.value)
-        DestinationExist.value = toGoListRef.value.spotExist(DestinationName.value);
+    if (destinationName.value && destinationTag.value) {
+        toGoListRef.value.addToSpotList(destinationName.value, destinationTag.value)
+        destinationAdded.value = toGoListRef.value.isSpotExist(destinationName.value);
     }
 }
 
 const drawerUp = () => {
-    console.log(drawerHeight.value);
     if (drawerHeight.value < positions[positions.length - 1]) {
         const index = positions.indexOf(drawerHeight.value);
         drawerHeight.value = positions[index + 1];
@@ -95,7 +145,6 @@ const drawerUp = () => {
 }
 
 const drawerDown = () => {
-    console.log(drawerHeight.value);
     if (drawerHeight.value > positions[0]) {
         const index = positions.indexOf(drawerHeight.value);
         drawerHeight.value = positions[index - 1];
@@ -105,11 +154,11 @@ const drawerDown = () => {
 
 const handleTouchStart = () => {
     drawerTransition.value = false;
-};
+}
 
 const handleTouchMove = (e) => {
     drawerHeight.value = Math.max(100, window.innerHeight - e.touches[0].clientY);
-};
+}
 
 const handleTouchEnd = () => {
     drawerTransition.value = true;
@@ -118,7 +167,7 @@ const handleTouchEnd = () => {
     );
     drawerHeight.value = closest;
     emit('position-change', positions.indexOf(closest));
-};
+}
 </script>
 
 <style scoped>
@@ -149,7 +198,7 @@ const handleTouchEnd = () => {
     color: rgb(185, 185, 185);
 }
 
-.add-button-container {
+.add-container {
     display: flex;
     align-items: center;
     gap: 10px;
@@ -160,8 +209,18 @@ const handleTouchEnd = () => {
     width: 35px;
 }
 
+.select-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
 .selected-name {
-    font-size: 15px;
+    font-size: 14px;
+}
+
+.edit-field {
+    padding: 0px;
 }
 
 .arrow-button-container {
