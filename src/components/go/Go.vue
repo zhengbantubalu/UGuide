@@ -8,18 +8,18 @@
         </div>
         <div class="legend-container">
             <div class="legend-row">
-                <div class="legend-item" v-for="(config, type) in pointTypeConfig" :key="type"
+                <van-button class="legend-item" v-for="(config, type) in pointLegendConfig" :key="type"
                     @click="switchPointType(type)" :style="{ backgroundColor: config.color }"
                     :class="{ active: displayPointTypes.includes(type) }">
                     {{ config.tag }}
-                </div>
+                </van-button>
             </div>
             <div class="legend-row">
-                <div class="legend-item" v-for="(config, type) in legendConfig" :key="type"
-                    @click="switchPointType(type)" :style="{ backgroundColor: config.color }"
+                <van-button class="legend-item" v-for="(config, type) in legendConfig" :key="type"
+                    @click="switchLegend(type)" :style="{ backgroundColor: config.color }"
                     :class="{ active: legendActive.includes(type) }">
                     {{ config.tag }}
-                </div>
+                </van-button>
             </div>
         </div>
         <Drawer ref="drawerRef" @position-change="drawerPositionChange" @update-path="updatePath"
@@ -48,81 +48,166 @@ const congestionColor = ['#00ff00', '#ffcc00', '#ff0000'];
 const drawerRef = ref(null);
 const displayPointTypes = ref(['Scenery', 'Gate']);
 const legendActive = ref(['Essential']);
+const selectedPoint = ref(null);
+const selectedBuilding = ref(null);
+const showLabelOrder = ref(false);
 
+//所有标点种类
 const pointTypeConfig = {
     'SportsGround': { tag: '运动场', color: '#e6194b' },
     'Gate': { tag: '大门', color: '#f58231' },
     'Dormitory': { tag: '宿舍', color: '#ffe119' },
     'Scenery': { tag: '景观', color: '#3cb44b' },
-    'Building': { tag: '建筑', color: '#42d4f4' },
+    'Building': { tag: '建筑', color: '#aaffc3' },
+    'Classroom': { tag: '教学楼', color: '#42d4f4' },
     'Canteen': { tag: '餐厅', color: '#911eb4' },
     'Shop': { tag: '商店', color: '#f032e6' },
-    // 'ElecParkSpot': { tag: '停车点', color: '#bfef45' },
+    'ElecParkSpot': { tag: '停车点', color: '#bfef45' },
+    'Toilet': { tag: '卫生间', color: '#dcbeff' }
 }
 
+//第一行图例
+const pointLegendConfig = {
+    'SportsGround': { tag: '运动场', color: '#e6194b' },
+    'Gate': { tag: '大门', color: '#f58231' },
+    'Dormitory': { tag: '宿舍', color: '#ffe119' },
+    'Scenery': { tag: '景观', color: '#3cb44b' },
+    'Classroom': { tag: '教学楼', color: '#42d4f4' },
+    'Canteen': { tag: '餐厅', color: '#911eb4' },
+    'Shop': { tag: '商店', color: '#f032e6' }
+}
+const pointTagToType = Object.fromEntries(
+    Object.entries(pointLegendConfig).map(([type, config]) => [config.tag, type])
+)
+
+//第二行图例
 const legendConfig = {
+    'ElecParkSpot': { tag: '停车点', color: '#bfef45' },
+    'Toilet': { tag: '卫生间', color: '#dcbeff' },
     'Essential': { tag: '必要标点', color: '#800000' },
     'All': { tag: '全部标点', color: '#000075' }
 }
+const legendTagToType = Object.fromEntries(
+    Object.entries(legendConfig).map(([type, config]) => [config.tag, type])
+)
 
+//选中第一行图例项
 const switchPointType = (type) => {
+    showLabelOrder.value = false;
+    legendActive.value = [];
+    displayPointTypes.value = [type];
+    updatePoints();
+}
+
+//选中第二行图例项
+const switchLegend = (type) => {
+    showLabelOrder.value = false;
     if (type === 'All') {
         legendActive.value = ['All'];
         displayPointTypes.value = Object.keys(pointTypeConfig).filter(key => key !== 'All');
     } else if (type === 'Essential') {
-        legendActive.value = ['Essential'];
+        legendActive.value = [type];
         displayPointTypes.value = ['Gate', 'Scenery'];
-    } else {
-        legendActive.value = [];
+    } else if (type === 'ElecParkSpot') {
+        legendActive.value = [type];
         displayPointTypes.value = [type];
+        updatePointOrder(type);
+    } else if (type === 'Toilet') {
+        legendActive.value = [type];
+        displayPointTypes.value = [type];
+        updatePointOrder(type);
     }
-    const currentOption = mapChart.value.getOption();
-    currentOption.series[0].data = pointGeoJSON.value.features
-        .filter(feature => displayPointTypes.value.includes(feature.pointType))
-        .map(feature => ({
-            name: feature.properties.name,
-            value: feature.geometry.coordinates,
-            itemStyle: { color: pointTypeConfig[feature.pointType].color }
-        }));
-    mapChart.value.setOption(currentOption, { notMerge: true });
-};
+    updatePoints();
+}
 
-const selectDestination = (name, callback) => {
-    if (buildingGeoJSON.value && buildingGeoJSON.value.features) {
-        if (pointGeoJSON.value.features.some(feature => feature.properties.name === name)) {
-            if (buildingGeoJSON.value.features.some(feature => feature.properties.name === name)) {
-                mapChart.value.dispatchAction({
-                    type: 'geoSelect',
-                    name: name
-                });
-            } else {
-                mapChart.value.dispatchAction({
-                    type: 'select',
-                    seriesIndex: 0,
-                    name: name
-                });
+//按类别筛选标点时进行排序
+const updatePointOrder = (type) => {
+    if (selectedPoint.value || selectedBuilding.value) {
+        let selectedPosition = null;
+        if (selectedPoint.value) {
+            //如果选中标点属于即将进行排序的种类，则不排序
+            let pointType = pointGeoJSON.value.features.find(
+                f => f.properties.name === selectedPoint.value.name)?.pointType;
+            if (pointType === type) {
+                showLabelOrder.value = false;
+                return;
             }
-            updateDestination(name);
-            callback(true);
-            return;
+            selectedPosition = selectedPoint.value.value;
+        } else {
+            selectedPosition = selectedBuilding.value.value;
         }
-        callback(false);
-        return;
+        const typeSpots = pointGeoJSON.value.features
+            .filter(f => f.pointType === type);
+        typeSpots.forEach(spot => {
+            const dx = spot.geometry.coordinates[0] - selectedPosition[0];
+            const dy = spot.geometry.coordinates[1] - selectedPosition[1];
+            spot.distance = Math.sqrt(dx * dx + dy * dy);
+        });
+        typeSpots.sort((a, b) => a.distance - b.distance);
+        typeSpots.forEach((spot, index) => {
+            spot.order = index + 1;
+        });
+        showLabelOrder.value = true;
+    } else {
+        showLabelOrder.value = false;
     }
-    callback(false);
-    return;
 }
 
-const updateDestination = (name) => {
-    if (!name) {
-        drawerRef.value.updateDestination(null, null);
-        return;
+//搜索目的地，子组件调用
+const selectDestination = (name, callback) => {
+    if (pointGeoJSON.value.features.some(feature => feature.properties.name === name)) {
+        //搜索的是地点名称
+        if (buildingGeoJSON.value.features.some(feature => feature.properties.name === name)) {
+            //地点为建筑
+            mapChart.value.dispatchAction({
+                type: 'geoSelect',
+                name: name
+            });
+        } else {
+            //地点为标点
+            selectedBuilding.value = null;
+            const selectedData = mapChart.value.getOption().series[0].data.find(
+                point => point.name === name
+            );
+            if (selectedData) {
+                selectedPoint.value = selectedData;
+            } else {
+                //搜索到的标点当前未显示，更新标点使其显示
+                const pointFeature = pointGeoJSON.value.features.find(
+                    f => f.properties.name === name
+                );
+                if (pointFeature) {
+                    selectedPoint.value = {
+                        name: pointFeature.properties.name,
+                        value: pointFeature.geometry.coordinates
+                    };
+                }
+                updatePoints();
+            }
+            //选中标点
+            mapChart.value.dispatchAction({
+                type: 'select',
+                seriesIndex: 0,
+                name: name
+            });
+        }
+        updateDestination(name);
+        callback('point');
+    } else if (pointTagToType[name]) {
+        //搜索的是第一行图例中的类型名称
+        switchPointType(pointTagToType[name]);
+        callback('tag');
+    } else if (legendTagToType[name]) {
+        //搜索的是第二行图例中的类型名称
+        switchLegend(legendTagToType[name]);
+        callback('tag');
+    } else {
+        //搜索的名称不存在
+        callback('none');
     }
-    const point = pointGeoJSON.value.features.find(f => f.properties.name === name);
-    const tag = pointTypeConfig[point.pointType].tag;
-    drawerRef.value.updateDestination(name, tag);
 }
 
+//抽屉高度改变，子组件调用
 const drawerPositionChange = (position) => {
     if (position === 0) {
         scale.value = 1;
@@ -146,6 +231,17 @@ const drawerPositionChange = (position) => {
         scale.value = 0;
         translateY.value = -30;
     }
+}
+
+//选中了目的地，调用子组件更新
+const updateDestination = (name) => {
+    if (!name) {
+        drawerRef.value.updateDestination(null, null);
+        return;
+    }
+    const point = pointGeoJSON.value.features.find(f => f.properties.name === name);
+    const tag = pointTypeConfig[point.pointType].tag;
+    drawerRef.value.updateDestination(name, tag);
 }
 
 onMounted(async () => {
@@ -172,9 +268,16 @@ const initMapChart = () => {
 
     //选中建筑改变，用户点击触发
     mapChart.value.on('geoselectchanged', (params) => {
-        if (params.allSelected && params.allSelected.length > 0) {
+        selectedPoint.value = null;
+        if (params.allSelected[0].name[0]) {
             //用户手动选中建筑
-            updateDestination(params.allSelected[0].name[0]);
+            updateDestination(params.name);
+            selectedBuilding.value = {
+                name: params.name,
+                value: pointGeoJSON.value.features.find(
+                    f => f.properties.name === params.name)?.geometry.coordinates
+            }
+            //取消选中标点
             mapChart.value.dispatchAction({
                 type: 'select',
                 seriesIndex: 0
@@ -182,6 +285,7 @@ const initMapChart = () => {
         } else {
             //用户手动取消选中建筑
             updateDestination(null);
+            selectedBuilding.value = null;
         }
     })
 
@@ -189,6 +293,13 @@ const initMapChart = () => {
     mapChart.value.on('geoselected', (params) => {
         if (params.name) {
             //通过搜索选中建筑
+            selectedPoint.value = null;
+            selectedBuilding.value = {
+                name: params.name,
+                value: pointGeoJSON.value.features.find(
+                    f => f.properties.name === params.name)?.geometry.coordinates
+            }
+            //取消选中标点
             mapChart.value.dispatchAction({
                 type: 'select',
                 seriesIndex: 0
@@ -204,8 +315,10 @@ const initMapChart = () => {
             if (params.selected && params.selected.length > 0
                 && params.selected[0].seriesIndex == 0) {
                 //用户手动选中标点
+                selectedBuilding.value = null;
                 const selectedData = mapChart.value.getOption()
                     .series[0].data[params.selected[0].dataIndex];
+                selectedPoint.value = selectedData;
                 updateDestination(selectedData.name);
                 mapChart.value.dispatchAction({
                     type: 'geoSelect',
@@ -214,17 +327,16 @@ const initMapChart = () => {
             } else {
                 //用户手动取消选中标点
                 updateDestination(null);
+                selectedPoint.value = null;
             }
+        } else if (params.selected && params.selected.length > 0) {
+            //通过搜索选中标点
+            mapChart.value.dispatchAction({
+                type: 'geoSelect',
+                name: null
+            });
         } else {
-            if (params.selected && params.selected.length > 0) {
-                //通过搜索选中标点
-                mapChart.value.dispatchAction({
-                    type: 'geoSelect',
-                    name: null
-                });
-            } else {
-                //在选中建筑时取消选中标点
-            }
+            //在选中建筑时取消选中标点
         }
     })
 }
@@ -239,6 +351,66 @@ const updatePath = (coordinates) => {
     mapChart.value.setOption(currentOption);
 }
 
+//根据标点顺序计算颜色，序号越大颜色越淡
+const darkenColor = (hex, index) => {
+    let intensity = 0;
+    if (index === 0) {
+        return '#ff0000';
+    } else {
+        intensity = index * 5;
+    }
+    let r = parseInt(hex.slice(1, 3), 16);
+    let g = parseInt(hex.slice(3, 5), 16);
+    let b = parseInt(hex.slice(5, 7), 16);
+    r = Math.min(Math.floor(r + intensity), 255);
+    g = Math.min(Math.floor(g + intensity), 255);
+    b = Math.min(Math.floor(b + intensity), 255);
+    return `rgba(${r}, ${g}, ${b})`;
+};
+
+const updatePoints = () => {
+    const currentOption = mapChart.value.getOption();
+    const filteredPoints = pointGeoJSON.value.features
+        .filter(feature => displayPointTypes.value.includes(feature.pointType));
+    //根据是否显示序号设置标点数据
+    if (showLabelOrder.value) {
+        currentOption.series[0].data = filteredPoints.map(feature => {
+            const baseColor = pointTypeConfig[feature.pointType]?.color;
+            return {
+                name: feature.properties.name,
+                value: [...feature.geometry.coordinates, feature.order],
+                symbolSize: 20,
+                itemStyle: { color: darkenColor(baseColor, feature.order - 1) },
+                label: {
+                    formatter: '{@[2]}',
+                    position: 'inside',
+                    fontWeight: 'bold',
+                    fontSize: 10
+                }
+            };
+        });
+    } else {
+        currentOption.series[0].data = filteredPoints.map(feature => ({
+            name: feature.properties.name,
+            value: feature.geometry.coordinates,
+            itemStyle: { color: pointTypeConfig[feature.pointType]?.color }
+        }));
+    }
+    //若选中了一个标点，将其添加到标点列表中
+    if (selectedPoint.value) {
+        let feature = pointGeoJSON.value.features.find(
+            f => f.properties.name === selectedPoint.value.name);
+        if (!displayPointTypes.value.includes(feature.pointType)) {
+            currentOption.series[0].data.push({
+                name: feature.properties.name,
+                value: feature.geometry.coordinates,
+                itemStyle: { color: pointTypeConfig[feature.pointType]?.color }
+            });
+        }
+    }
+    mapChart.value.setOption(currentOption);
+}
+
 const renderMap = async () => {
     try {
         mapChart.value.setOption({
@@ -249,7 +421,7 @@ const renderMap = async () => {
                 center: defaultCenter.value,
                 scaleLimit: {
                     min: 0.9,
-                    max: 2.5
+                    max: 5
                 },
                 itemStyle: {
                     areaColor: '#edfcff',
@@ -363,12 +535,13 @@ const renderMap = async () => {
 }
 
 .legend-item {
+    height: 30px;
     padding: 4px 8px;
-    border-radius: 4px;
+    border-radius: 8px;
     color: white;
     font-size: 12px;
-    cursor: pointer;
     opacity: 0.5;
+    border-color: white;
 }
 
 .legend-item.active {

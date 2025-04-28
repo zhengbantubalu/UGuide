@@ -107,7 +107,7 @@ onMounted(async () => {
 }
 
 .diary-container {
-    padding: 20px;
+    padding: 20px 20px 100px 20px;
 }
 
 .diary-title {

@@ -6,7 +6,7 @@
             <div class="add-container">
                 <van-button v-if="(!isEditing && !destinationAdded) || (isEditing && !inputName)" class="add-button"
                     round type="primary" icon="plus" @click="clickAddDestination"
-                    :disabled="!(destinationName || destinationTag) || !destinationExist || (isEditing && !inputName)" />
+                    :disabled="!destinationName || !destinationTag || !destinationExist || (isEditing && !inputName)" />
                 <van-button v-else-if="(!isEditing && destinationAdded)" class="add-button" round type="primary"
                     icon="minus" @click="clickDeleteDestination" />
                 <van-button v-else class="add-button" round type="primary" icon="success" @click="clickConfirmEdit" />
@@ -119,10 +119,14 @@ const clickConfirmEdit = () => {
     destinationAdded.value = false;
     isEditing.value = false;
     destinationName.value = inputName.value;
-    emit('select-destination', destinationName.value, (exists) => {
-        if (exists) {
+    emit('select-destination', destinationName.value, (type) => {
+        if (type === 'point') {
             destinationExist.value = true;
             inputName.value = '';
+        } else if (type === 'tag') {
+            destinationExist.value = true;
+            destinationName.value = null;
+            destinationTag.value = inputName.value;
         } else {
             destinationExist.value = false;
         }

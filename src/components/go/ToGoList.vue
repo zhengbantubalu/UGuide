@@ -104,7 +104,7 @@ const clickPathPlanMulti = async () => {
         const validItems = spotList.value.slice(0, spotList.value.length - checkedNum.value);
         const spotNames = validItems.map(item => item.title);
         if (spotNames.length < 2) {
-            showFailToast('至少两个地点');
+            showFailToast('至少2个地点');
             return;
         }
         const { path, distance, visitOrder } = await pathPlanMulti(spotNames);
