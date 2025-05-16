@@ -1,6 +1,6 @@
 <template>
     <!-- <van-nav-bar title="UGuide" /> -->
-    <router-view class="page" />
+    <router-view class="home-page" />
     <van-tabbar route :border="false">
         <van-tabbar-item replace icon="medal" to="/home/diary">发现</van-tabbar-item>
         <van-tabbar-item replace icon="location" to="/home/spot">景点</van-tabbar-item>
@@ -15,7 +15,8 @@
 <script setup></script>
 
 <style scoped>
-.page {
+.home-page {
+    min-height: 100vh;
     background-color: #f0f0f0;
 }
 

@@ -4,7 +4,7 @@
             <van-button round block plain type="primary">定制化规划</van-button>
             <van-button round block type="primary" @click="clickPathPlanMulti">全自动规划</van-button>
         </div>
-        <van-list class="spot-list" :loading="loading" :finished="finished" @load="onLoad">
+        <van-list class="spot-list" :loading="loading" :finished="finished" @load="onLoadList">
             <div class="spot-item" v-for="(item, index) in spotList" :key="index">
                 <div class="checkbox-container"><van-checkbox v-model="item.checked" @click="clickCheckbox(index)" />
                 </div>
@@ -29,124 +29,136 @@
 </template>
 
 <script setup>
-import { pathPlanMulti } from '/src/api/path';
-import { ref } from 'vue';
-import { showFailToast } from 'vant';
+import { pathPlanMulti } from '/src/api/path'
+import { getUserInfo, setToGoList } from '/src/api/user'
+import { ref } from 'vue'
+import { showFailToast } from 'vant'
 
-const spotList = ref([
-    { title: '学6公寓', tag: '宿舍', checked: false },
-    { title: '教三楼', tag: '建筑', checked: false }
-]);
-const loading = ref(false);
-const finished = ref(false);
-const checkedNum = ref(0);
-const checkboxLocked = ref(false);
+const spotList = ref([])
 
-const emit = defineEmits(['update-path'], ['delete']);
+const loadToGoList = async () => {
+    const { success, data } = await getUserInfo()
+    if (success) {
+        spotList.value = data.toGoList.split(',').map(item => {
+            const [title, tag, checked] = item.split('|')
+            return { title, tag, checked: checked === '1' }
+        })
+        checkedNum.value = spotList.value.filter(item => item.checked).length
+    }
+}
+
+loadToGoList()
+const loading = ref(false)
+const finished = ref(false)
+const checkedNum = ref(0)
+const checkboxLocked = ref(false)
+
+const emit = defineEmits(['update-path'], ['delete'])
+
+const spotListToString = () => {
+    return spotList.value.map(item => `${item.title}|${item.tag}|${item.checked ? '1' : '0'}`).join(',')
+}
 
 const addToSpotList = (name, tag) => {
     spotList.value.unshift({
         title: name,
         tag: tag,
         checked: false
-    });
-};
+    })
+    setToGoList(spotListToString())
+}
 
 const deleteFromSpotList = (name) => {
-    const index = spotList.value.findIndex(item => item.title === name);
+    const index = spotList.value.findIndex(item => item.title === name)
     if (index !== -1) {
-        spotList.value.splice(index, 1);
+        spotList.value.splice(index, 1)
+        setToGoList(spotListToString())
     }
 }
 
 const isSpotExist = (name) => {
-    return spotList.value.some(item => item.title === name);
+    return spotList.value.some(item => item.title === name)
 }
 
-defineExpose({ addToSpotList, deleteFromSpotList, isSpotExist });
+defineExpose({ addToSpotList, deleteFromSpotList, isSpotExist })
 
-const onLoad = () => {
-    loading.value = true;
-    try {
-        finished.value = true;
-    } catch (error) {
-        console.error('获取数据时出错:', error);
-    } finally {
-        loading.value = false;
-    }
-};
+const onLoadList = () => {
+    finished.value = true
+    loading.value = false
+}
 
 const clickCheckbox = async (index) => {
-    const item = spotList.value[index];
+    const item = spotList.value[index]
     if (checkboxLocked.value) {
-        item.checked = !item.checked;
-        return;
+        item.checked = !item.checked
+        return
     }
-    checkboxLocked.value = true;
+    checkboxLocked.value = true
     if (item.checked) {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        spotList.value.splice(index, 1);
-        spotList.value.push(item);
-        item.checked = true;
-        checkedNum.value++;
+        await new Promise(resolve => setTimeout(resolve, 300))
+        spotList.value.splice(index, 1)
+        spotList.value.push(item)
+        item.checked = true
+        checkedNum.value++
     } else {
-        await new Promise(resolve => setTimeout(resolve, 300));
-        spotList.value.splice(index, 1);
-        spotList.value.unshift(item);
-        item.checked = false;
-        checkedNum.value--;
+        await new Promise(resolve => setTimeout(resolve, 300))
+        spotList.value.splice(index, 1)
+        spotList.value.unshift(item)
+        item.checked = false
+        checkedNum.value--
     }
-    checkboxLocked.value = false;
-};
+    checkboxLocked.value = false
+    setToGoList(spotListToString())
+}
 
 const clickPathPlanMulti = async () => {
-    try {
-        const validItems = spotList.value.slice(0, spotList.value.length - checkedNum.value);
-        const spotNames = validItems.map(item => item.title);
-        if (spotNames.length < 2) {
-            showFailToast('至少2个地点');
-            return;
-        }
-        const { path, distance, visitOrder } = await pathPlanMulti(spotNames);
-        emit('update-path', path);
-        const firstItem = spotList.value[0];
-        let lastItems = [];
-        if (checkedNum.value > 0) {
-            lastItems = spotList.value.slice(-checkedNum.value);
-        }
-        const remainingItems = spotList.value.slice(1, spotList.value.length - checkedNum.value);
-        const sortedItems = visitOrder.map(name => {
-            return remainingItems.find(item => item.title === name);
-        }).filter(item => item);
-        spotList.value = [firstItem, ...sortedItems, ...lastItems];
-    } catch (error) {
-        console.error('路径规划时出错:', error);
+    const validItems = spotList.value.slice(0, spotList.value.length - checkedNum.value)
+    const spotNames = validItems.map(item => item.title)
+    if (spotNames.length < 2) {
+        showFailToast('至少添加2个地点')
+        return
     }
+    const { path, distance, visitOrder } = await pathPlanMulti(spotNames)
+    emit('update-path', path)
+    const firstItem = spotList.value[0]
+    let lastItems = []
+    if (checkedNum.value > 0) {
+        lastItems = spotList.value.slice(-checkedNum.value)
+    }
+    const remainingItems = spotList.value.slice(1, spotList.value.length - checkedNum.value)
+    const sortedItems = visitOrder.map(name => {
+        return remainingItems.find(item => item.title === name)
+    }).filter(item => item)
+    spotList.value = [firstItem, ...sortedItems, ...lastItems]
+    setToGoList(spotList.value.map(item => `${item.title}|${item.tag}|${item.checked ? '1' : '0'}`).join(','))
 }
 
 const moveUp = (index) => {
     if (index > 0) {
-        const temp = spotList.value[index];
-        spotList.value[index] = spotList.value[index - 1];
-        spotList.value[index - 1] = temp;
+        const temp = spotList.value[index]
+        spotList.value[index] = spotList.value[index - 1]
+        spotList.value[index - 1] = temp
+        setToGoList(spotListToString())
     }
-};
+}
 
 const moveDown = (index) => {
     if (index < spotList.value.length - 1) {
-        const temp = spotList.value[index];
-        spotList.value[index] = spotList.value[index + 1];
-        spotList.value[index + 1] = temp;
+        const temp = spotList.value[index]
+        spotList.value[index] = spotList.value[index + 1]
+        spotList.value[index + 1] = temp
+        setToGoList(spotListToString())
     }
-};
+}
 
 const deleteItem = (index) => {
     if (spotList.value[index].checked) {
-        checkedNum.value--;
+        checkedNum.value--
     }
-    emit('delete', spotList.value[index].title);
-    spotList.value.splice(index, 1);
-};
+    emit('delete', spotList.value[index].title)
+    spotList.value.splice(index, 1)
+    setToGoList(spotListToString())
+}
 </script>
 
 <style scoped>
@@ -181,8 +193,8 @@ const deleteItem = (index) => {
     flex: 1;
     display: flex;
     align-items: center;
-    justify-content: space-between;
     padding-right: 20px;
+    gap: 10px;
 }
 
 .spot-title {

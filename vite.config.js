@@ -1,5 +1,5 @@
-import { defineConfig } from 'vite';
-import vue from '@vitejs/plugin-vue';
+import { defineConfig } from 'vite'
+import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   plugins: [
@@ -17,7 +17,7 @@ export default defineConfig({
       '/api/arith/path': {
         target: 'http://47.93.189.31:8081',
         changeOrigin: true,
-        rewrite: (path) => path.replace('/api/arith/path', '/path')
+        rewrite: (path) => path.replace('/api/arith/path', '/')
       },
       '/api/upload': {
         target: 'http://47.93.189.31:8090',

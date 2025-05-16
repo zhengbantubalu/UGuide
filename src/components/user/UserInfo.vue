@@ -2,9 +2,9 @@
     <div class="cell-group-container">
         <van-cell-group inset>
             <van-cell center title="头像" is-link @click="editAvatar">
-                <van-image round class="user-avatar" src="http://47.93.189.31/res/bupt.ico" alt="用户头像" />
+                <van-image round class="user-avatar" :src="avatarUrl" fit="cover" />
             </van-cell>
-            <van-cell center title="用户名" is-link :value="userName" @click="editUsername" />
+            <van-cell center title="用户名" is-link :value="username" @click="editUsername" />
             <van-cell center title="密码" is-link @click="editPassword" />
         </van-cell-group>
     </div>
@@ -51,120 +51,102 @@
 </template>
 
 <script setup>
-import axios from 'axios';
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import { showSuccessToast, showFailToast } from 'vant';
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { showSuccessToast, showFailToast } from 'vant'
+import { uploadAvatar } from '/src/api/file'
+import { getUserInfo, changeAvatarUrl, changeUserName, changePassword } from '/src/api/user'
 
-const router = useRouter();
-const avatarOk = ref(false);
-const username = ref('');
-const old_password = ref('');
-const new_password = ref('');
-const new_password_confirm = ref('');
-const fileList = ref([]);
-const userName = ref('');
+const router = useRouter()
+const avatarOk = ref(false)
+const username = ref('')
+const old_password = ref('')
+const new_password = ref('')
+const new_password_confirm = ref('')
+const fileList = ref([])
+const avatarUrl = ref('')
 
 onMounted(async () => {
-    try {
-        const token = window.localStorage.getItem('token');
-        const response = await axios.get('/api/data/users/info', {
-            headers: {
-                Authorization: `${token}`
-            }
-        });
-        const { success, data } = response.data;
-        if (success) {
-            userName.value = data.username;
+    const { success, data } = await getUserInfo()
+    if (success) {
+        username.value = data.username
+        if (data.avatarUrl) {
+            avatarUrl.value = data.avatarUrl
         } else {
-            showFailToast('请先登录');
-            window.localStorage.setItem('login', false);
-            router.back();
+            avatarUrl.value = "http://47.93.189.31/res/bupt.ico"
         }
-    } catch (error) {
-        console.error('获取用户信息时出错:', error);
-        showFailToast('获取用户信息时出错');
+    } else {
+        showFailToast('请先登录')
+        window.localStorage.setItem('login', false)
+        router.back()
     }
-});
+})
 
 const onAvatarSubmit = async () => {
-    const formData = new FormData();
-    formData.append('file', fileList.value[0].file);
-    try {
-        const response = await axios.post('/api/upload/user/avatar', formData);
-        const { success, message, fileUrl } = response.data;
+    const { success, message, avatarUrl: newAvatarUrl } = await uploadAvatar(fileList.value[0].file)
+    if (success) {
+        avatarUrl.value = newAvatarUrl
+        const { success, message } = await changeAvatarUrl(newAvatarUrl)
         if (success) {
-            showSuccessToast(message);
-            // updateAvatar(fileUrl); 
-            showAvatar.value = false;
+            showSuccessToast(message)
+            showAvatar.value = false
         } else {
-            showFailToast(message);
+            showFailToast(message)
         }
-    } catch (error) {
-        console.error('上传时出错:', error);
-        showFailToast('上传时出错');
+    } else {
+        showFailToast(message)
     }
-};
+}
 
 const onUsernameSubmit = async () => {
-
+    const { success, message } = await changeUserName(username.value)
+    if (success) {
+        showSuccessToast(message)
+        showUsername.value = false
+    } else {
+        showFailToast(message)
+    }
 }
 
 const onPasswordSubmit = async () => {
-    try {
-        const old_token = window.localStorage.getItem('token');
-        const response = await axios.patch('/api/data/users/password', {
-            oldPassword: old_password.value,
-            newPassword: new_password.value
-        }, {
-            headers: {
-                Authorization: `${old_token}`
-            }
-        });
-        const { success, message, data } = response.data;
-        if (success) {
-            window.localStorage.setItem('token', data);
-            showPassword.value = false;
-            showSuccessToast(message);
-        } else {
-            showFailToast(message);
-            console.error(response.data);
-        }
-    } catch (error) {
-        console.error('修改密码时出错:', error);
-        showFailToast('修改密码时出错');
+    const { success, message } = await changePassword(old_password.value, new_password.value)
+    if (success) {
+        showPassword.value = false
+        showSuccessToast(message)
+    } else {
+        showFailToast(message)
     }
 }
 
+const logout = () => {
+    window.localStorage.setItem('login', false)
+    window.localStorage.removeItem('token')
+    showSuccessToast('退出成功')
+    router.back()
+}
+
 const afterRead = (file) => {
-    avatarOk.value = true;
-};
+    avatarOk.value = true
+}
 
 const validator = (val) => {
-    return val === new_password.value;
-};
+    return val === new_password.value
+}
 
-const showAvatar = ref(false);
+const showAvatar = ref(false)
 const editAvatar = () => {
-    showAvatar.value = true;
-};
+    showAvatar.value = true
+}
 
-const showUsername = ref(false);
+const showUsername = ref(false)
 const editUsername = () => {
-    showUsername.value = true;
-};
+    showUsername.value = true
+}
 
-const showPassword = ref(false);
+const showPassword = ref(false)
 const editPassword = () => {
-    showPassword.value = true;
-};
-
-const logout = () => {
-    window.localStorage.setItem('login', false);
-    window.localStorage.removeItem('token');
-    showSuccessToast('退出成功');
-    router.back();
-};
+    showPassword.value = true
+}
 </script>
 
 <style scoped>

@@ -1,15 +1,14 @@
-import { createRouter, createWebHistory } from 'vue-router';
-import Home from '../components/Home.vue';
-import Diary from '../components/diary/Diary.vue';
-import Spot from '../components/spot/Spot.vue';
-import Go from '../components/go/Go.vue';
-import ToGo from '../components/togo/ToGo.vue';
-import User from '../components/user/User.vue';
-import Map from '../components/spot/Map.vue';
-import Login from '../components/user/Login.vue';
-import Register from '../components/user/Register.vue';
-import UserInfo from '../components/user/UserInfo.vue';
-import DiaryDetail from '../components/diary/DiaryDetial.vue';
+import { createRouter, createWebHistory } from 'vue-router'
+import Home from '../components/Home.vue'
+import Diary from '../components/diary/Diary.vue'
+import Spot from '../components/spot/Spot.vue'
+import Go from '../components/go/Go.vue'
+import ToGo from '../components/togo/ToGo.vue'
+import User from '../components/user/User.vue'
+import Login from '../components/user/Login.vue'
+import Register from '../components/user/Register.vue'
+import UserInfo from '../components/user/UserInfo.vue'
+import DiaryDetail from '../components/diary/DiaryDetial.vue'
 
 const routes = [
     {
@@ -51,7 +50,7 @@ const routes = [
     {
         path: '/map',
         name: 'Map',
-        component: Map
+        component: Go
     },
     {
         path: '/login',
@@ -69,20 +68,30 @@ const routes = [
         component: UserInfo
     },
     {
-        path: '/diary/detail',
+        path: '/diary/detail/:id',
         name: 'DiaryDetail',
         component: DiaryDetail
     },
     {
+        path: '/history',
+        name: 'History',
+        component: Diary
+    },
+    {
+        path: '/star',
+        name: 'Star',
+        component: Diary
+    },
+    {
         path: '/test',
         name: 'Test',
-        component: Go
+        component: Diary
     }
-];
+]
 
 const router = createRouter({
     history: createWebHistory(),
     routes
-});
+})
 
-export default router;
+export default router

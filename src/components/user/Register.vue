@@ -19,49 +19,40 @@
 </template>
 
 <script setup>
-import axios from 'axios';
-import { ref, onMounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
-import { showSuccessToast, showFailToast } from 'vant';
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { showSuccessToast, showFailToast } from 'vant'
+import { register } from '/src/api/user'
 
-const route = useRoute();
-const router = useRouter();
-const username = ref('');
-const password = ref('');
-const password_confirm = ref('');
+const route = useRoute()
+const router = useRouter()
+const username = ref('')
+const password = ref('')
+const password_confirm = ref('')
 
 const validator = (val) => {
-    return val === password.value;
-};
+    return val === password.value
+}
 
 onMounted(() => {
-    const { username: queryUsername, password: queryPassword } = route.query;
+    const { username: queryUsername, password: queryPassword } = route.query
     if (queryUsername) {
-        username.value = queryUsername;
+        username.value = queryUsername
     }
     if (queryPassword) {
-        password.value = queryPassword;
+        password.value = queryPassword
     }
-});
+})
 
-const onSubmit = async (values) => {
-    try {
-        const response = await axios.post('/api/data/users/register', {
-            username: username.value,
-            password: password.value
-        });
-        const { success, message } = response.data;
-        if (success) {
-            showSuccessToast(message);
-            router.back();
-        } else {
-            showFailToast(message);
-        }
-    } catch (error) {
-        console.error('注册时出错:', error);
-        showFailToast('注册时出错');
+const onSubmit = async () => {
+    const { success, message } = await register(username.value, password.value)
+    if (success) {
+        showSuccessToast(message)
+        router.back()
+    } else {
+        showFailToast(message)
     }
-};
+}
 </script>
 
 <style scoped>

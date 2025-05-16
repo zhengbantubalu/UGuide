@@ -1,6 +1,6 @@
 <template>
     <div class="page-container">
-        <van-list class="spot-list" :loading="loading" :finished="finished" @load="onLoad">
+        <van-list class="spot-list" :loading="loading" :finished="finished" @load="onLoadList">
             <div class="spot-item" v-for="(item, index) in spotList" :key="index" @click="goToMap">
                 <van-image class="spot-image" :src="item.cover" fit="contain" />
                 <div class="spot-content">
@@ -11,9 +11,9 @@
                     </div>
                 </div>
                 <div class="arrow-button-group">
-                    <van-button class="arrow-button" plain type="primary" @click="moveUp(index)" :disabled="index === 0"
-                        icon="arrow-up" />
-                    <van-button class="arrow-button" plain type="primary" @click="moveDown(index)"
+                    <van-button class="arrow-button" plain type="primary" @click.stop="moveUp(index)"
+                        :disabled="index === 0" icon="arrow-up" />
+                    <van-button class="arrow-button" plain type="primary" @click.stop="moveDown(index)"
                         :disabled="index === spotList.length - 1" icon="arrow-down" />
                 </div>
             </div>
@@ -22,59 +22,51 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import axios from 'axios';
-import { useRouter } from 'vue-router';
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { getAllSpot } from '/src/api/spot'
 
-const spotList = ref([]);
-const loading = ref(false);
-const finished = ref(false);
-const router = useRouter();
+const spotList = ref([])
+const loading = ref(false)
+const finished = ref(false)
+const router = useRouter()
 
 const goToMap = () => {
-    router.push('/map');
-};
+    router.push('/map')
+}
 
-const onLoad = async () => {
-    loading.value = true;
-    try {
-        const response = await axios.get('/api/data/scs');
-        const data = response.data;
-        spotList.value = data.map(item => ({
-            title: item.name,
-            info: item.info || '暂无信息',
-            score: item.score,
-            tags: item.tags == null ? [] : String(item.tags).split(','),
-            cover: item.imgUr || 'http://47.93.189.31/res/bupt.ico'
-        }));
-        finished.value = true;
-    } catch (error) {
-        console.error('获取数据时出错:', error);
-    } finally {
-        loading.value = false;
-    }
-};
+const updateSpotList = async () => {
+    spotList.value = await getAllSpot()
+    loading.value = false
+    finished.value = true
+}
+
+const onLoadList = async () => {
+    loading.value = true
+    await updateSpotList()
+}
 
 const moveUp = (index) => {
     if (index > 0) {
-        const temp = spotList.value[index];
-        spotList.value[index] = spotList.value[index - 1];
-        spotList.value[index - 1] = temp;
+        const temp = spotList.value[index]
+        spotList.value[index] = spotList.value[index - 1]
+        spotList.value[index - 1] = temp
     }
-};
+}
 
 const moveDown = (index) => {
     if (index < spotList.value.length - 1) {
-        const temp = spotList.value[index];
-        spotList.value[index] = spotList.value[index + 1];
-        spotList.value[index + 1] = temp;
+        const temp = spotList.value[index]
+        spotList.value[index] = spotList.value[index + 1]
+        spotList.value[index + 1] = temp
     }
-};
+}
 </script>
 
 <style scoped>
 .page-container {
     padding: 5px 5px 100px 5px;
+    background-color: #f0f0f0;
 }
 
 .spot-list {

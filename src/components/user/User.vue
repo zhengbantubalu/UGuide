@@ -1,64 +1,72 @@
 <template>
     <div class="page-container">
         <div class="user-info" @click="goToLogin">
-            <van-image round class="user-avatar" src="http://47.93.189.31/res/bupt.ico" />
-            <div class="user-name">{{ userName }}</div>
+            <van-image round class="user-avatar" :src="avatarUrl" fit="cover" />
+            <div class="user-name">{{ username }}</div>
         </div>
-        <van-grid :column-num="2">
-            <van-grid-item icon="clock-o" text="浏览历史" to="/test" />
-            <van-grid-item icon="star-o" text="游记收藏" to="/test" />
-        </van-grid>
-        <Diary />
+        <van-tabs swipeable>
+            <van-tab title="投稿">
+                <Diary type="own" />
+            </van-tab>
+            <van-tab title="收藏">
+                <Diary type="star" />
+            </van-tab>
+            <van-tab title="历史">
+                <Diary type="history" />
+            </van-tab>
+        </van-tabs>
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
-import axios from 'axios';
-import Diary from '../diary/Diary.vue';
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
+import { getUserInfo } from '/src/api/user'
+import Diary from '../diary/Diary.vue'
 
-const router = useRouter();
-const isLoggedIn = ref(false);
-const userName = ref('');
+const router = useRouter()
+const isLoggedIn = ref(false)
+const username = ref('')
+const avatarUrl = ref('')
 
 onMounted(async () => {
-    isLoggedIn.value = window.localStorage.getItem('login') === 'true';
+    isLoggedIn.value = (window.localStorage.getItem('login') === 'true')
     if (isLoggedIn.value) {
-        try {
-            const token = window.localStorage.getItem('token');
-            const response = await axios.get('/api/data/users/info', {
-                headers: {
-                    Authorization: `${token}`
-                }
-            });
-            const { success, data } = response.data;
-            if (success) {
-                userName.value = data.username;
+        const { success, data } = await getUserInfo()
+        if (success) {
+            username.value = data.username
+            if (data.avatarUrl) {
+                avatarUrl.value = data.avatarUrl
             } else {
-                window.localStorage.setItem('login', false);
-                isLoggedIn.value = false;
-                userName.value = '点击登录';
+                avatarUrl.value = "http://47.93.189.31/res/bupt.ico"
             }
-        } catch (error) {
-            console.error('获取用户信息时出错:', error);
+        } else {
+            window.localStorage.setItem('login', false)
+            avatarUrl.value = "http://47.93.189.31/res/bupt.ico"
+            isLoggedIn.value = false
+            username.value = '点击登录'
         }
     }
     else {
-        userName.value = '点击登录';
+        avatarUrl.value = "http://47.93.189.31/res/bupt.ico"
+        username.value = '点击登录'
     }
-});
+})
 
 const goToLogin = () => {
     if (isLoggedIn.value) {
-        router.push('/user/info');
+        router.push('/user/info')
     } else {
-        router.push('/login');
+        router.push('/login')
     }
-};
+}
 </script>
 
 <style scoped>
+.page-container {
+    background-color: #f0f0f0;
+}
+
 .user-info {
     display: flex;
     align-items: center;
@@ -77,6 +85,5 @@ const goToLogin = () => {
 .user-name {
     color: black;
     font-size: 18px;
-    font-weight: bold;
 }
 </style>

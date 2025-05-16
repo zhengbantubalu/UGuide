@@ -19,35 +19,25 @@
 </template>
 
 <script setup>
-import axios from 'axios';
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
-import { showSuccessToast, showFailToast } from 'vant';
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { showSuccessToast, showFailToast } from 'vant'
+import { login } from '/src/api/user'
 
-const router = useRouter();
-const username = ref('');
-const password = ref('');
+const router = useRouter()
+const username = ref('')
+const password = ref('')
 
-const onSubmit = async (values) => {
-    try {
-        const response = await axios.post('/api/data/users/login', {
-            username: username.value,
-            password: password.value
-        });
-        const { success, message, token } = response.data;
-        if (success) {
-            window.localStorage.setItem('token', token);
-            window.localStorage.setItem('login', true);
-            showSuccessToast(message);
-            router.back();
-        } else {
-            showFailToast(message);
-        }
-    } catch (error) {
-        console.error('登录时出错:', error);
-        showFailToast('登录时出错');
+const onSubmit = async () => {
+    const { success, message } = await login(username.value, password.value)
+    if (success) {
+        window.localStorage.setItem('login', true)
+        showSuccessToast(message)
+        router.back()
+    } else {
+        showFailToast(message)
     }
-};
+}
 </script>
 
 <style scoped>

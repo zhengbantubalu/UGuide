@@ -3,6 +3,7 @@
         :close-on-click-overlay="false"
         :style="{ height: `${drawerHeight}px`, transition: `${drawerTransition ? 'height 0.3s ease' : ''}` }">
         <div class="handle-bar" @touchstart="handleTouchStart" @touchmove="handleTouchMove" @touchend="handleTouchEnd">
+            <div class="handle"></div>
             <div class="add-container">
                 <van-button v-if="(!isEditing && !destinationAdded) || (isEditing && !inputName)" class="add-button"
                     round type="primary" icon="plus" @click="clickAddDestination"
@@ -36,7 +37,7 @@
                     <Editor />
                 </van-tab>
                 <van-tab>
-                    <Diary />
+                    <Diary type="star" />
                 </van-tab>
             </van-tabs>
         </div>
@@ -49,86 +50,86 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue';
-import Diary from '../diary/Diary.vue';
-import ToGoList from './ToGoList.vue';
-import Editor from './Editor.vue';
+import { ref, nextTick } from 'vue'
+import Diary from '../diary/Diary.vue'
+import ToGoList from './ToGoList.vue'
+import Editor from './Editor.vue'
 
-const showPopup = ref(true);
-const activeTab = ref(0);
+const showPopup = ref(true)
+const activeTab = ref(0)
 const positions = [154, Math.floor(window.innerHeight * 0.5),
-    Math.floor(window.innerHeight * 0.95)];
-const drawerHeight = ref(positions[1]);
-const drawerTransition = ref(true);
-const toGoListRef = ref(null);
-const destinationName = ref(null);
-const destinationTag = ref(null);
-const destinationAdded = ref(false);
-const destinationExist = ref(true);
-const isEditing = ref(true);
-const inputName = ref('');
-const inputFieldRef = ref(null);
+    Math.floor(window.innerHeight * 0.95)]
+const drawerHeight = ref(positions[1])
+const drawerTransition = ref(true)
+const toGoListRef = ref(null)
+const destinationName = ref(null)
+const destinationTag = ref(null)
+const destinationAdded = ref(false)
+const destinationExist = ref(true)
+const isEditing = ref(true)
+const inputName = ref('')
+const inputFieldRef = ref(null)
 
-const emit = defineEmits(['position-change'], ['update-path'], ['select-destination']);
+const emit = defineEmits(['position-change'], ['update-path'], ['select-destination'])
 
 const updateDestination = (name, tag) => {
     if (name && tag) {
-        destinationAdded.value = toGoListRef.value.isSpotExist(name);
-        isEditing.value = false;
-        destinationExist.value = true;
+        destinationAdded.value = toGoListRef.value.isSpotExist(name)
+        isEditing.value = false
+        destinationExist.value = true
     } else {
-        destinationAdded.value = false;
-        isEditing.value = true;
-        inputName.value = '';
+        destinationAdded.value = false
+        isEditing.value = true
+        inputName.value = ''
     }
-    destinationName.value = name;
-    destinationTag.value = tag;
+    destinationName.value = name
+    destinationTag.value = tag
 }
 
-defineExpose({ updateDestination });
+defineExpose({ updateDestination })
 
 const updatePath = (coordinates) => {
-    emit('update-path', coordinates);
+    emit('update-path', coordinates)
 }
 
 const updateExist = (name) => {
     if (destinationName.value === name) {
-        destinationAdded.value = false;
+        destinationAdded.value = false
     }
 }
 
 const switchToEditing = () => {
-    isEditing.value = true;
-    inputName.value = destinationExist.value ? '' : destinationName.value;
+    isEditing.value = true
+    inputName.value = destinationExist.value ? '' : destinationName.value
     nextTick(() => {
         if (inputFieldRef.value) {
-            inputFieldRef.value.focus();
+            inputFieldRef.value.focus()
         }
     })
 }
 
 const clickDeleteDestination = () => {
-    toGoListRef.value.deleteFromSpotList(destinationName.value);
-    destinationAdded.value = false;
+    toGoListRef.value.deleteFromSpotList(destinationName.value)
+    destinationAdded.value = false
 }
 
 const clickConfirmEdit = () => {
     if (!inputName.value) {
-        return;
+        return
     }
-    destinationAdded.value = false;
-    isEditing.value = false;
-    destinationName.value = inputName.value;
+    destinationAdded.value = false
+    isEditing.value = false
+    destinationName.value = inputName.value
     emit('select-destination', destinationName.value, (type) => {
         if (type === 'point') {
-            destinationExist.value = true;
-            inputName.value = '';
+            destinationExist.value = true
+            inputName.value = ''
         } else if (type === 'tag') {
-            destinationExist.value = true;
-            destinationName.value = null;
-            destinationTag.value = inputName.value;
+            destinationExist.value = true
+            destinationName.value = null
+            destinationTag.value = inputName.value
         } else {
-            destinationExist.value = false;
+            destinationExist.value = false
         }
     })
 }
@@ -136,49 +137,49 @@ const clickConfirmEdit = () => {
 const clickAddDestination = () => {
     if (destinationName.value && destinationTag.value) {
         toGoListRef.value.addToSpotList(destinationName.value, destinationTag.value)
-        destinationAdded.value = toGoListRef.value.isSpotExist(destinationName.value);
+        destinationAdded.value = toGoListRef.value.isSpotExist(destinationName.value)
     }
 }
 
 const drawerUp = () => {
     if (drawerHeight.value < positions[positions.length - 1]) {
-        const index = positions.indexOf(drawerHeight.value);
-        drawerHeight.value = positions[index + 1];
-        emit('position-change', index + 1);
+        const index = positions.indexOf(drawerHeight.value)
+        drawerHeight.value = positions[index + 1]
+        emit('position-change', index + 1)
     }
 }
 
 const drawerDown = () => {
     if (drawerHeight.value > positions[0]) {
-        const index = positions.indexOf(drawerHeight.value);
-        drawerHeight.value = positions[index - 1];
-        emit('position-change', index - 1);
+        const index = positions.indexOf(drawerHeight.value)
+        drawerHeight.value = positions[index - 1]
+        emit('position-change', index - 1)
     }
 }
 
 const handleTouchStart = () => {
-    drawerTransition.value = false;
+    drawerTransition.value = false
 }
 
 const handleTouchMove = (e) => {
-    drawerHeight.value = Math.max(100, window.innerHeight - e.touches[0].clientY);
+    drawerHeight.value = Math.max(100, window.innerHeight - e.touches[0].clientY)
 }
 
 const handleTouchEnd = () => {
-    drawerTransition.value = true;
+    drawerTransition.value = true
     const closest = positions.reduce((prev, curr) =>
         Math.abs(curr - drawerHeight.value) < Math.abs(prev - drawerHeight.value) ? curr : prev
-    );
-    drawerHeight.value = closest;
-    emit('position-change', positions.indexOf(closest));
+    )
+    drawerHeight.value = closest
+    emit('position-change', positions.indexOf(closest))
 }
 </script>
 
 <style scoped>
 .popup {
-    background-color: #f0f0f0;
     box-shadow: 0 -4px 12px rgba(0, 0, 0, 0.05);
     margin-top: 50px;
+    background-color: #f0f0f0;
 }
 
 .handle-bar {
@@ -196,10 +197,15 @@ const handleTouchEnd = () => {
 }
 
 .handle {
+    width: 40px;
+    height: 4px;
     position: absolute;
+    top: 6px;
     left: 50%;
+    border-radius: 2px;
     transform: translateX(-50%);
-    color: rgb(185, 185, 185);
+    background-color: #ccc;
+    z-index: 1;
 }
 
 .add-container {
@@ -242,7 +248,6 @@ const handleTouchEnd = () => {
     padding-top: 50px;
     height: 100%;
     overflow: auto;
-    background-color: #f0f0f0;
 }
 
 .tabs {

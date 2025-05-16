@@ -1,8 +1,8 @@
 <template>
     <div class="page-container">
-        <van-list class="diary-list" :loading="loading" :finished="finished" @load="onLoad">
-            <div class="diary-item" v-for="item in diaryList" @click="goToDetail">
-                <van-image class="diary-image" :src="item.cover" fit="cover" />
+        <van-list class="diary-list" :loading="loading" :finished="finished" @load="onLoadList">
+            <div class="diary-item" v-for="item in diaryList" @click="goToDetail(item.id)" :key="item.id">
+                <van-image class="diary-image" :src="item.coverUrl" fit="cover" />
                 <div class="diary-content">
                     <div class="diary-title">{{ item.title }}</div>
                     <van-icon class="diary-username" name="user-o">{{ item.username }}</van-icon>
@@ -13,126 +13,51 @@
 </template>
 
 <script setup>
-import { ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { getAllDiary, getOwnDiary, getHistoryDiary, getStarDiary } from '/src/api/diary'
 
-const randomTitles = [
-    '今日的奇妙冒险',
-    '美食探索之旅',
-    '大自然的宁静时刻',
-    '艺术的灵感碰撞',
-    '运动带来的活力',
-    '与朋友的欢乐时光',
-    '工作中的小成就',
-    '学习新技能的挑战',
-    '夜晚的星空之美',
-    '阅读带来的心灵滋养'
-];
-
-const randomUsernames = [
-    '大夫',
-    '大概士夫',
-    '大概士大夫',
-    '大概士概士夫',
-    '大概士大大概士夫',
-    '大概士大夫大概士大夫',
-    '旅行者',
-    '探险家'
-];
-
-// 生成随机标题的函数
-const getRandomTitle = () => {
-    const randomIndex = Math.floor(Math.random() * randomTitles.length);
-    return randomTitles[randomIndex];
-};
-
-// 生成随机用户名的函数
-const getRandomUsername = () => {
-    const randomIndex = Math.floor(Math.random() * randomUsernames.length);
-    return randomUsernames[randomIndex];
-};
-
-// 模拟列表数据
-const diaryList = ref([
-    {
-        cover: 'http://47.93.189.31/res/Carto.jpg',
-        username: getRandomUsername(),
-        title: getRandomTitle()
-    },
-    {
-        cover: 'http://47.93.189.31/res/Carto.jpg',
-        username: getRandomUsername(),
-        title: getRandomTitle()
-    },
-    {
-        cover: 'http://47.93.189.31/res/Carto.jpg',
-        username: getRandomUsername(),
-        title: getRandomTitle()
-    },
-    {
-        cover: 'http://47.93.189.31/res/Carto.jpg',
-        username: getRandomUsername(),
-        title: getRandomTitle()
-    },
-    {
-        cover: 'http://47.93.189.31/res/Carto.jpg',
-        username: getRandomUsername(),
-        title: getRandomTitle()
-    },
-    {
-        cover: 'http://47.93.189.31/res/Carto.jpg',
-        username: getRandomUsername(),
-        title: getRandomTitle()
-    },
-    {
-        cover: 'http://47.93.189.31/res/Carto.jpg',
-        username: getRandomUsername(),
-        title: getRandomTitle()
-    },
-    {
-        cover: 'http://47.93.189.31/res/Carto.jpg',
-        username: getRandomUsername(),
-        title: getRandomTitle()
-    },
-    {
-        cover: 'http://47.93.189.31/res/Carto.jpg',
-        username: getRandomUsername(),
-        title: getRandomTitle()
-    },
-    {
-        cover: 'http://47.93.189.31/res/Carto.jpg',
-        username: getRandomUsername(),
-        title: getRandomTitle()
-    },
-    {
-        cover: 'http://47.93.189.31/res/Carto.jpg',
-        username: getRandomUsername(),
-        title: getRandomTitle()
-    },
-    {
-        cover: 'http://47.93.189.31/res/Carto.jpg',
-        username: getRandomUsername(),
-        title: getRandomTitle()
-    },
-    {
-        cover: 'http://47.93.189.31/res/Carto.jpg',
-        username: getRandomUsername(),
-        title: getRandomTitle()
+const props = defineProps({
+    type: {
+        type: String,
+        required: true,
+        default: 'all'
     }
-]);
-const loading = ref(false);
-const finished = ref(false);
-const router = useRouter();
+})
 
-const goToDetail = () => {
-    router.push('/diary/detail');
-};
+const diaryList = ref([])
+const loading = ref(false)
+const finished = ref(false)
+const router = useRouter()
 
+const goToDetail = (id) => {
+    router.push(`/diary/detail/${id}`)
+}
+
+const updateDiaryList = async () => {
+    if (props.type === 'own') {
+        diaryList.value = await getOwnDiary()
+    } else if (props.type === 'star') {
+        diaryList.value = await getStarDiary()
+    } else if (props.type === 'history') {
+        diaryList.value = await getHistoryDiary()
+    } else {
+        diaryList.value = await getAllDiary()
+    }
+    loading.value = false
+    finished.value = true
+}
+
+const onLoadList = async () => {
+    loading.value = true
+    await updateDiaryList()
+}
 </script>
 
 <style scoped>
 .page-container {
     padding: 5px 0px 100px 5px;
+    background-color: #f0f0f0;
 }
 
 .diary-list {
