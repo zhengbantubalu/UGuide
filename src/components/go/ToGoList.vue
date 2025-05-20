@@ -30,24 +30,11 @@
 
 <script setup>
 import { pathPlanMulti } from '/src/api/path'
-import { getUserInfo, setToGoList } from '/src/api/user'
+import { getToGoList, setToGoList } from '/src/api/togo'
 import { ref } from 'vue'
 import { showFailToast } from 'vant'
 
 const spotList = ref([])
-
-const loadToGoList = async () => {
-    const { success, data } = await getUserInfo()
-    if (success) {
-        spotList.value = data.toGoList.split(',').map(item => {
-            const [title, tag, checked] = item.split('|')
-            return { title, tag, checked: checked === '1' }
-        })
-        checkedNum.value = spotList.value.filter(item => item.checked).length
-    }
-}
-
-loadToGoList()
 const loading = ref(false)
 const finished = ref(false)
 const checkedNum = ref(0)
@@ -56,7 +43,8 @@ const checkboxLocked = ref(false)
 const emit = defineEmits(['update-path'], ['delete'])
 
 const spotListToString = () => {
-    return spotList.value.map(item => `${item.title}|${item.tag}|${item.checked ? '1' : '0'}`).join(',')
+    return spotList.value.map(item =>
+        `${item.title}|${item.tag}|${item.checked ? '1' : '0'}`).join(',')
 }
 
 const addToSpotList = (name, tag) => {
@@ -82,9 +70,17 @@ const isSpotExist = (name) => {
 
 defineExpose({ addToSpotList, deleteFromSpotList, isSpotExist })
 
-const onLoadList = () => {
+const onLoadList = async () => {
     finished.value = true
     loading.value = false
+    const { success, data } = await getToGoList()
+    if (success) {
+        spotList.value = data.split(',').map(item => {
+            const [title, tag, checked] = item.split('|')
+            return { title, tag, checked: checked === '1' }
+        })
+        checkedNum.value = spotList.value.filter(item => item.checked).length
+    }
 }
 
 const clickCheckbox = async (index) => {

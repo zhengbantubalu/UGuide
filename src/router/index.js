@@ -8,7 +8,8 @@ import User from '../components/user/User.vue'
 import Login from '../components/user/Login.vue'
 import Register from '../components/user/Register.vue'
 import UserInfo from '../components/user/UserInfo.vue'
-import DiaryDetail from '../components/diary/DiaryDetial.vue'
+import DiaryDetail from '../components/diary/DiaryDetail.vue'
+import SpotDetail from '../components/spot/SpotDetail.vue'
 
 const routes = [
     {
@@ -48,9 +49,9 @@ const routes = [
         component: Go
     },
     {
-        path: '/map',
-        name: 'Map',
-        component: Go
+        path: '/spot/detail/:id',
+        name: 'SpotDetail',
+        component: SpotDetail
     },
     {
         path: '/login',
@@ -73,18 +74,13 @@ const routes = [
         component: DiaryDetail
     },
     {
-        path: '/history',
-        name: 'History',
-        component: Diary
+        path: '/diary/detail/preview',
+        name: 'DiaryDetailPreview',
+        component: DiaryDetail
     },
     {
-        path: '/star',
-        name: 'Star',
-        component: Diary
-    },
-    {
-        path: '/test',
-        name: 'Test',
+        path: '/diary/about/:id',
+        name: 'DiaryAbout',
         component: Diary
     }
 ]

@@ -14,8 +14,8 @@ export const getUserInfo = async () => {
             data: {
                 username: response.data.data.username,
                 avatarUrl: response.data.data.imageUrl,
-                toGoList: response.data.data.toGoList,
-                ownDiary: response.data.data.ownDiary
+                ownDiary: response.data.data.ownDiary,
+                starSpot: response.data.data.starSpot
             }
         }
     } catch (error) {
@@ -145,30 +145,6 @@ export const register = async (username, password) => {
         return {
             success: false,
             message: '注册时出错'
-        }
-    }
-}
-
-export const setToGoList = async (toGoList) => {
-    try {
-        const token = window.localStorage.getItem('token')
-        const response = await axios.post('/api/data/users/changemessage', {
-            toGoList: toGoList
-        }, {
-            headers: {
-                Authorization: token
-            }
-        })
-
-        return {
-            success: response.data.success,
-            message: response.data.message
-        }
-    } catch (error) {
-        console.error('修改打卡列表时出错:', error)
-        return {
-            success: false,
-            message: '修改打卡列表时出错'
         }
     }
 }

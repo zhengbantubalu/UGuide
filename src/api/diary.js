@@ -10,7 +10,7 @@ const mapResponse = (response) => {
         username: item.username,
         coverUrl: item.imageurl || defaultUrl,
         num: item.num
-    }))
+    })).reverse()
 }
 
 export const getAllDiary = async () => {
@@ -72,15 +72,25 @@ export const getStarDiary = async () => {
     }
 }
 
+export const getDiaryBySpotID = async (spotId) => {
+    try {
+        const allDiary = await getAllDiary()
+        return allDiary
+        return allDiary.filter(diary => diary.id === spotId)
+    } catch (error) {
+        console.error('获取景点下的日记时出错:', error)
+        return []
+    }
+}
+
 export const getDiaryDetail = async (id) => {
     try {
         const response = await axios.get('/api/data/diary/' + id)
-
+        console.log(response)
         return {
             id: response.data.id,
-            spotId: response.data.spotid,
+            spotId: response.data.spotId,
             title: response.data.head,
-            username: response.data.username,
             content: response.data.content,
             imageUrls: response.data.imageurl || defaultImages,
             num: response.data.num
@@ -97,7 +107,7 @@ export const createDiary = async (title, content, imageUrl) => {
         const response = await axios.post('/api/data/diary/add', {
             head: title,
             content: content,
-            imageurl: imageUrl
+            imageUrl: imageUrl
         }, {
             headers: {
                 Authorization: token
@@ -134,4 +144,20 @@ export const updateDiary = async (id, title, content, imageUrls) => {
 
 export const deleteDiary = async (id) => {
 
+}
+
+export const starDiary = async (id) => {
+    try {
+        const token = window.localStorage.getItem('token')
+        const response = await axios.get('/api/data/users/diary/addstar/' + id,
+            {
+                headers: {
+                    Authorization: token
+                }
+            }
+        )
+        console.log(response)
+    } catch (error) {
+        console.error('收藏日记时出错:', error)
+    }
 }

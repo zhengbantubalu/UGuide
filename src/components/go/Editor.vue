@@ -9,14 +9,15 @@
         <van-field class="content-editor" v-model="editorContent" autosize type="textarea" maxlength="1000"
             show-word-limit placeholder="随手写下旅行中的见闻和感受吧" :rules="[{ validator, message: '请至少填写30字' }]" />
         <div class="button-container">
-            <van-button round block plain type="primary" to="/diary/detail/1">预览</van-button>
+            <!-- <van-button round block plain type="primary" @click="onSave">暂存</van-button> -->
+            <van-button round block plain type="primary" @click="onPreview">预览</van-button>
             <van-button round block type="primary" native-type="submit">提交</van-button>
         </div>
     </van-form>
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { showSuccessToast, showFailToast } from 'vant'
 import { createDiary } from '/src/api/diary'
 import { uploadDiaryCover } from '/src/api/file'
@@ -31,6 +32,31 @@ const validator = (val) => {
     return val.length >= 30
 }
 
+const onSave = () => {
+    localStorage.setItem('draftTitle', editorTitle.value)
+    localStorage.setItem('draftContent', editorContent.value)
+    localStorage.setItem('draftImages', JSON.stringify(fileList.value))
+    showSuccessToast('暂存成功')
+}
+
+const onPreview = () => {
+    localStorage.setItem('draftTitle', editorTitle.value)
+    localStorage.setItem('draftContent', editorContent.value)
+    localStorage.setItem('draftImageUrls', fileList.value.map(file => URL.createObjectURL(file.file)))
+    router.push({
+        path: '/diary/detail/preview'
+    })
+}
+
+onMounted(() => {
+    const draftTitle = localStorage.getItem('draftTitle') || ''
+    const draftContent = localStorage.getItem('draftContent') || ''
+    // const draftImages = localStorage.getItem('draftImages') || ''
+
+    if (draftTitle) editorTitle.value = draftTitle
+    if (draftContent) editorContent.value = draftContent
+})
+
 const onSubmit = async () => {
     if (fileList.value.length === 0) {
         showFailToast('至少添加1张图片')
@@ -38,13 +64,14 @@ const onSubmit = async () => {
     }
     uploadDiaryCover(fileList.value[0].file).then(res => {
         if (res.success) {
-            console.log(res.imgUrl)
             createDiary(editorTitle.value, editorContent.value, res.imgUrl).then(res => {
                 if (res.success) {
                     showSuccessToast('发布成功')
-                    console.log(res.id)
+                    localStorage.removeItem('draftTitle')
+                    localStorage.removeItem('draftContent')
+                    localStorage.removeItem('draftImages')
                     if (res.id != -1) {
-                        router.push(`/diary/detail/${res.id}`)
+                        router.replace(`/diary/detail/${res.id}`)
                     }
                 } else {
                     showFailToast(res.message)

@@ -24,7 +24,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getAllSpot } from '/src/api/spot'
+import { getStarSpot, setStarSpot } from '/src/api/spot'
 
 const spotList = ref([])
 const loading = ref(false)
@@ -36,7 +36,7 @@ const goToMap = () => {
 }
 
 const updateSpotList = async () => {
-    spotList.value = await getAllSpot()
+    spotList.value = await getStarSpot()
     loading.value = false
     finished.value = true
 }
@@ -51,6 +51,8 @@ const moveUp = (index) => {
         const temp = spotList.value[index]
         spotList.value[index] = spotList.value[index - 1]
         spotList.value[index - 1] = temp
+        const ids = spotList.value.map(item => item.id).join(',')
+        setStarSpot(ids)
     }
 }
 
@@ -59,6 +61,8 @@ const moveDown = (index) => {
         const temp = spotList.value[index]
         spotList.value[index] = spotList.value[index + 1]
         spotList.value[index + 1] = temp
+        const ids = spotList.value.map(item => item.id).join(',')
+        setStarSpot(ids)
     }
 }
 </script>

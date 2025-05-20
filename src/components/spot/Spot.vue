@@ -1,7 +1,7 @@
 <template>
     <div class="page-container">
         <van-list class="spot-list" :loading="loading" :finished="finished" @load="onLoadList">
-            <div class="spot-item" v-for="item in spotList" @click="goToMap">
+            <div class="spot-item" v-for="item in spotList" @click="goToDetail(item.id)">
                 <van-image class="spot-image" :src="item.cover" fit="contain" />
                 <div class="spot-content">
                     <div class="spot-title">{{ item.title }}</div>
@@ -29,8 +29,8 @@ const loading = ref(false)
 const finished = ref(false)
 const router = useRouter()
 
-const goToMap = () => {
-    router.push('/map')
+const goToDetail = (id) => {
+    router.push(`/spot/detail/${id}`)
 }
 
 const updateSpotList = async () => {

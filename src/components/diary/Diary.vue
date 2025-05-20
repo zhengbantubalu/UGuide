@@ -14,8 +14,8 @@
 
 <script setup>
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
-import { getAllDiary, getOwnDiary, getHistoryDiary, getStarDiary } from '/src/api/diary'
+import { useRoute, useRouter } from 'vue-router'
+import { getAllDiary, getOwnDiary, getHistoryDiary, getStarDiary, getDiaryBySpotID } from '/src/api/diary'
 
 const props = defineProps({
     type: {
@@ -29,6 +29,7 @@ const diaryList = ref([])
 const loading = ref(false)
 const finished = ref(false)
 const router = useRouter()
+const route = useRoute()
 
 const goToDetail = (id) => {
     router.push(`/diary/detail/${id}`)
@@ -41,8 +42,10 @@ const updateDiaryList = async () => {
         diaryList.value = await getStarDiary()
     } else if (props.type === 'history') {
         diaryList.value = await getHistoryDiary()
-    } else {
+    } else if (router.currentRoute.value.path === '/home/diary') {
         diaryList.value = await getAllDiary()
+    } else if (props.type === 'spot') {
+        diaryList.value = await getDiaryBySpotID(route.params.id)
     }
     loading.value = false
     finished.value = true
