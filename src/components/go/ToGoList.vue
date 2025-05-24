@@ -1,10 +1,10 @@
 <template>
     <div class="page-container">
-        <div class="button-container">
-            <van-button round block plain type="primary">定制化规划</van-button>
+        <div class="button-container" v-if="!showCustomForm">
+            <van-button round block plain type="primary" @click="clickCustomPlan">定制化规划</van-button>
             <van-button round block type="primary" @click="clickPathPlanMulti">全自动规划</van-button>
         </div>
-        <van-list class="spot-list" :loading="loading" :finished="finished" @load="onLoadList">
+        <van-list v-if="!showCustomForm" class="spot-list" :loading="loading" :finished="finished" @load="onLoadList">
             <div class="spot-item" v-for="(item, index) in spotList" :key="index">
                 <div class="checkbox-container"><van-checkbox v-model="item.checked" @click="clickCheckbox(index)" />
                 </div>
@@ -25,11 +25,20 @@
                 </div>
             </div>
         </van-list>
+        <van-picker v-else class="custom-picker" v-model="customFormData" title="定制化规划" :columns="columns"
+            @confirm="onPickerConfirm" @cancel="showCustomForm = false" @change="onPickerChange" visible-option-num="5">
+            <template #title>
+                <div class="picker-title-container">
+                    <div>定制化规划</div>
+                    <div class="picker-subtitle">{{ customOptionInfo }}</div>
+                </div>
+            </template>
+        </van-picker>
     </div>
 </template>
 
 <script setup>
-import { pathPlanMulti } from '/src/api/path'
+import { pathPlanMulti, pathPlanMultiRemain, pathPlanSingleTime } from '/src/api/path'
 import { getToGoList, setToGoList } from '/src/api/togo'
 import { ref } from 'vue'
 import { showFailToast } from 'vant'
@@ -39,8 +48,78 @@ const loading = ref(false)
 const finished = ref(false)
 const checkedNum = ref(0)
 const checkboxLocked = ref(false)
+const congestionIndex = ref(0)
+const showCustomForm = ref(false)
+const customFormData = ref([])
+const infos = ref([
+    '仅规划前两个打卡点之间的路线',
+    '先到最近的停车点再前往目的地',
+    '不会改变打卡列表的顺序',
+    '与全自动规划功能一致'
+])
+const customOptionInfo = ref(infos.value[0])
+const columns = [
+    {
+        text: '最短时间',
+        value: 'time',
+        children: [
+            { text: '步行', value: 'walk' },
+            { text: '自行车', value: 'bike' },
+            { text: '电动车', value: 'e_bike' }
+        ],
+    },
+    {
+        text: '最短路程',
+        value: 'distance',
+        children: [
+            { text: '保持顺序', value: 'remain' },
+            { text: '重新排序', value: 'reorder' }
+        ],
+    },
+]
 
 const emit = defineEmits(['update-path'], ['delete'])
+
+const onPickerChange = () => {
+    if (customFormData.value[0] === 'time') {
+        if (customFormData.value[1] === 'e_bike') {
+            customOptionInfo.value = infos.value[1]
+        } else {
+            customOptionInfo.value = infos.value[0]
+        }
+    } else {
+        if (customFormData.value[1] === 'remain') {
+            customOptionInfo.value = infos.value[2]
+        } else {
+            customOptionInfo.value = infos.value[3]
+        }
+    }
+}
+
+const onPickerConfirm = async () => {
+    showCustomForm.value = false
+    if (customFormData.value[0] === 'time') {
+        const start = spotList.value[0].title
+        const end = spotList.value[1].title
+        const { path, time, distance, elecSpot } = await pathPlanSingleTime(start, end, customFormData.value[1], congestionIndex.value)
+        if (customFormData.value[1] === 'e_bike') {
+            emit('update-path', path, time, distance, [start, elecSpot, end])
+        } else {
+            emit('update-path', path, time, distance, [start, end])
+        }
+    } else {
+        const validItems = spotList.value.slice(0, spotList.value.length - checkedNum.value)
+        const spotNames = validItems.map(item => item.title)
+        if (customFormData.value[1] === 'remain') {
+            const { path, distance } = await pathPlanMultiRemain(spotNames)
+            emit('update-path', path, 0, distance, spotNames)
+        } else {
+            const { path, distance, visitOrder } = await pathPlanMulti(spotNames)
+            emit('update-path', path, 0, distance, [spotNames[0], ...visitOrder])
+            updateList(visitOrder)
+        }
+    }
+}
 
 const spotListToString = () => {
     return spotList.value.map(item =>
@@ -68,17 +147,26 @@ const isSpotExist = (name) => {
     return spotList.value.some(item => item.title === name)
 }
 
-defineExpose({ addToSpotList, deleteFromSpotList, isSpotExist })
+const setCongestionIndex = (index) => {
+    congestionIndex.value = index
+}
+
+defineExpose({ addToSpotList, deleteFromSpotList, isSpotExist, setCongestionIndex })
 
 const onLoadList = async () => {
     finished.value = true
     loading.value = false
     const { success, data } = await getToGoList()
     if (success) {
-        spotList.value = data.split(',').map(item => {
-            const [title, tag, checked] = item.split('|')
-            return { title, tag, checked: checked === '1' }
-        })
+        if (data.length === 0) {
+            spotList.value = []
+        } else {
+            spotList.value = data.split(',').map(item => {
+                const [title, tag, checked] = item.split('|')
+                return { title, tag, checked: checked === '1' }
+            })
+        }
+
         checkedNum.value = spotList.value.filter(item => item.checked).length
     }
 }
@@ -107,15 +195,7 @@ const clickCheckbox = async (index) => {
     setToGoList(spotListToString())
 }
 
-const clickPathPlanMulti = async () => {
-    const validItems = spotList.value.slice(0, spotList.value.length - checkedNum.value)
-    const spotNames = validItems.map(item => item.title)
-    if (spotNames.length < 2) {
-        showFailToast('至少添加2个地点')
-        return
-    }
-    const { path, distance, visitOrder } = await pathPlanMulti(spotNames)
-    emit('update-path', path)
+const updateList = (visitOrder) => {
     const firstItem = spotList.value[0]
     let lastItems = []
     if (checkedNum.value > 0) {
@@ -127,6 +207,28 @@ const clickPathPlanMulti = async () => {
     }).filter(item => item)
     spotList.value = [firstItem, ...sortedItems, ...lastItems]
     setToGoList(spotList.value.map(item => `${item.title}|${item.tag}|${item.checked ? '1' : '0'}`).join(','))
+}
+
+const clickCustomPlan = () => {
+    const validItems = spotList.value.slice(0, spotList.value.length - checkedNum.value)
+    const spotNames = validItems.map(item => item.title)
+    if (spotNames.length < 2) {
+        showFailToast('至少添加2个地点')
+        return
+    }
+    showCustomForm.value = true
+}
+
+const clickPathPlanMulti = async () => {
+    const validItems = spotList.value.slice(0, spotList.value.length - checkedNum.value)
+    const spotNames = validItems.map(item => item.title)
+    if (spotNames.length < 2) {
+        showFailToast('至少添加2个地点')
+        return
+    }
+    const { path, distance, visitOrder } = await pathPlanMulti(spotNames)
+    emit('update-path', path, 0, distance, [spotNames[0], ...visitOrder])
+    updateList(visitOrder)
 }
 
 const moveUp = (index) => {
@@ -159,7 +261,7 @@ const deleteItem = (index) => {
 
 <style scoped>
 .page-container {
-    padding: 5px 5px 100px 5px;
+    padding: 5px 5px 50px 5px;
 }
 
 .spot-list {
@@ -248,5 +350,24 @@ const deleteItem = (index) => {
     display: flex;
     justify-content: space-between;
     gap: 10px;
+}
+
+.custom-picker {
+    height: 280px;
+    border-radius: 10px;
+}
+
+.picker-title-container {
+    padding-top: 25px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    z-index: 2;
+}
+
+.picker-subtitle {
+    font-size: 12px;
+    color: #999;
+    margin-top: 4px;
 }
 </style>

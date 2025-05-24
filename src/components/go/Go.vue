@@ -1,8 +1,23 @@
 <template>
     <div class="page-container">
+        <div class="title-container" :style="{
+            transform: `scale(${scale}) translateY(${translateY}%)`,
+            transition: 'transform 0.3s ease'
+        }">
+            <div class="spot-title">
+                <van-image class="spot-image" :src="spotLogoUrl" fit="contain" />
+                <div class="title">{{ spotName }}</div>
+            </div>
+            <div class="path-info">
+                <div v-if="showPathTime" style="height: 10px;"></div>
+                <div v-if="showPathTime">{{ Math.floor(pathTime / 60) }} 分 {{ pathTime % 60 }} 秒</div>
+                <div v-if="showPathLength">{{ pathLength }} 米</div>
+                <div v-if="!showPathTime" style="height: 10px;"></div>
+            </div>
+        </div>
         <div class="map-container">
             <div id="map" class="map" :style="{
-                transform: `scale(${scale}) translateY(${translateY}%)`,
+                transform: `scale(${scale})`,
                 transition: 'transform 0.5s ease'
             }"></div>
         </div>
@@ -52,6 +67,13 @@ const legendActive = ref(['Essential'])
 const selectedPoint = ref(null)
 const selectedBuilding = ref(null)
 const showLabelOrder = ref(false)
+const pathPoints = ref([])
+const pathLength = ref(0)
+const pathTime = ref(63)
+const spotName = ref('北京邮电大学')
+const spotLogoUrl = ref('http://47.93.189.31/res/spot/logo/北京邮电大学.png')
+const showPathLength = ref(false)
+const showPathTime = ref(false)
 
 //所有标点种类
 const pointTypeConfig = {
@@ -86,7 +108,8 @@ const legendConfig = {
     'ElecParkSpot': { tag: '停车点', color: '#bfef45' },
     'Toilet': { tag: '卫生间', color: '#dcbeff' },
     'Essential': { tag: '必要标点', color: '#800000' },
-    'All': { tag: '全部标点', color: '#000075' }
+    'All': { tag: '全部标点', color: '#000075' },
+    'None': { tag: '关闭标点', color: '#666666' }
 }
 const legendTagToType = Object.fromEntries(
     Object.entries(legendConfig).map(([type, config]) => [config.tag, type])
@@ -117,6 +140,9 @@ const switchLegend = async (type) => {
         legendActive.value = [type]
         displayPointTypes.value = [type]
         await updatePointOrder(type)
+    } else if (type === 'None') {
+        legendActive.value = [type]
+        displayPointTypes.value = []
     }
     updatePoints()
 }
@@ -168,7 +194,7 @@ const selectDestination = (name, callback) => {
         } else {
             //地点为标点
             selectedBuilding.value = null
-            const selectedData = mapChart.value.getOption().series[0].data.find(
+            const selectedData = mapChart.value.getOption().series[2].data.find(
                 point => point.name === name
             )
             if (selectedData) {
@@ -189,7 +215,7 @@ const selectDestination = (name, callback) => {
             //选中标点
             mapChart.value.dispatchAction({
                 type: 'select',
-                seriesIndex: 0,
+                seriesIndex: 2,
                 name: name
             })
         }
@@ -247,11 +273,19 @@ const updateDestination = (name) => {
 }
 
 onMounted(async () => {
-    congestionIndex.value = Math.floor(Math.random() * 3)
+    initCongestionIndex()
     await fetchMapData()
     initMapChart()
     await renderMap()
 })
+
+const initCongestionIndex = () => {
+    congestionIndex.value = Math.floor(Math.random() * 3)
+    //如果 setCongestionIndex 立刻调用，此时 Drawer 的 ToGoListRef 还未初始化，所以等一会后再调用
+    setTimeout(() => {
+        drawerRef.value.setCongestionIndex(congestionIndex.value)
+    }, 1000)
+}
 
 const fetchMapData = async () => {
     const { roadJSON, buildingJSON, pointJSON } = await fetchMapJson()
@@ -278,7 +312,7 @@ const initMapChart = () => {
             //取消选中标点
             mapChart.value.dispatchAction({
                 type: 'select',
-                seriesIndex: 0
+                seriesIndex: 2
             })
         } else {
             //用户手动取消选中建筑
@@ -300,7 +334,7 @@ const initMapChart = () => {
             //取消选中标点
             mapChart.value.dispatchAction({
                 type: 'select',
-                seriesIndex: 0
+                seriesIndex: 2
             })
         } else {
             //在选中标点时取消选中建筑
@@ -311,11 +345,11 @@ const initMapChart = () => {
     mapChart.value.on('selectchanged', (params) => {
         if (params.isFromClick) {
             if (params.selected && params.selected.length > 0
-                && params.selected[0].seriesIndex == 0) {
+                && params.selected[0].seriesIndex == 2) {
                 //用户手动选中标点
                 selectedBuilding.value = null
                 const selectedData = mapChart.value.getOption()
-                    .series[0].data[params.selected[0].dataIndex]
+                    .series[2].data[params.selected[0].dataIndex]
                 selectedPoint.value = selectedData
                 updateDestination(selectedData.name)
                 mapChart.value.dispatchAction({
@@ -339,14 +373,21 @@ const initMapChart = () => {
     })
 }
 
-const updatePath = (coordinates) => {
+const updatePath = (coordinates, time, distance, visitOrder) => {
+    switchLegend('None')
     const currentOption = mapChart.value.getOption()
-    currentOption.series[2] = {
+    currentOption.series[1] = {
         data: [{
             coords: coordinates,
-        }]
+        }],
     }
+    pathTime.value = time
+    pathLength.value = distance
+    showPathTime.value = time > 0
+    showPathLength.value = distance > 0
     mapChart.value.setOption(currentOption)
+    pathPoints.value = visitOrder
+    updatePoints()
 }
 
 //根据标点顺序计算颜色，序号越大颜色越淡
@@ -372,7 +413,7 @@ const updatePoints = () => {
         .filter(feature => displayPointTypes.value.includes(feature.pointType))
     //根据是否显示序号设置标点数据
     if (showLabelOrder.value) {
-        currentOption.series[0].data = filteredPoints.map(feature => {
+        currentOption.series[2].data = filteredPoints.map(feature => {
             const baseColor = pointTypeConfig[feature.pointType]?.color
             return {
                 name: feature.properties.name,
@@ -388,7 +429,7 @@ const updatePoints = () => {
             }
         })
     } else {
-        currentOption.series[0].data = filteredPoints.map(feature => ({
+        currentOption.series[2].data = filteredPoints.map(feature => ({
             name: feature.properties.name,
             value: feature.geometry.coordinates,
             itemStyle: { color: pointTypeConfig[feature.pointType]?.color }
@@ -399,13 +440,37 @@ const updatePoints = () => {
         let feature = pointGeoJSON.value.features.find(
             f => f.properties.name === selectedPoint.value.name)
         if (!displayPointTypes.value.includes(feature.pointType)) {
-            currentOption.series[0].data.push({
+            currentOption.series[2].data.push({
                 name: feature.properties.name,
                 value: feature.geometry.coordinates,
                 itemStyle: { color: pointTypeConfig[feature.pointType]?.color }
             })
         }
     }
+    //将路径规划途径点添加到标点列表中
+    pathPoints.value.forEach((name, index) => {
+        let feature = pointGeoJSON.value.features.find(
+            f => f.properties.name === name
+        )
+        if (!displayPointTypes.value.includes(feature.pointType)) {
+            let pointConfig = {
+                name: feature.properties.name,
+                value: [...feature.geometry.coordinates, index + 1],
+                symbolSize: 15,
+                itemStyle: {
+                    color: index === 0 ? '#00ff00' :
+                        (index === pathPoints.value.length - 1 ? '#ff0000' : '#1989fa')
+                },
+                label: {
+                    formatter: '{@[2]}',
+                    position: 'inside',
+                    fontWeight: 'bold',
+                    fontSize: 8
+                }
+            }
+            currentOption.series[2].data.push(pointConfig)
+        }
+    })
     mapChart.value.setOption(currentOption)
 }
 
@@ -435,30 +500,6 @@ const renderMap = async () => {
             }
         },
         series: [{
-            type: 'scatter',
-            coordinateSystem: 'geo',
-            symbolSize: 10,
-            data: pointGeoJSON.value.features
-                .filter(feature => displayPointTypes.value.includes(feature.pointType))
-                .map(feature => ({
-                    name: feature.properties.name,
-                    value: feature.geometry.coordinates,
-                    itemStyle: { color: pointTypeConfig[feature.pointType].color }
-                })),
-            selectedMode: 'single',
-            select: {
-                itemStyle: {
-                    color: '#1989fa',
-                    borderColor: '#1989fa',
-                    borderWidth: 3
-                }
-            },
-            label: {
-                show: true,
-                formatter: '{b}',
-                position: 'top'
-            }
-        }, {
             type: 'lines',
             coordinateSystem: 'geo',
             polyline: true,
@@ -490,6 +531,30 @@ const renderMap = async () => {
                 symbolSize: 6,
                 symbol: 'circle'
             }
+        }, {
+            type: 'scatter',
+            coordinateSystem: 'geo',
+            symbolSize: 10,
+            data: pointGeoJSON.value.features
+                .filter(feature => displayPointTypes.value.includes(feature.pointType))
+                .map(feature => ({
+                    name: feature.properties.name,
+                    value: feature.geometry.coordinates,
+                    itemStyle: { color: pointTypeConfig[feature.pointType].color }
+                })),
+            selectedMode: 'single',
+            select: {
+                itemStyle: {
+                    color: '#1989fa',
+                    borderColor: '#1989fa',
+                    borderWidth: 3
+                }
+            },
+            label: {
+                show: true,
+                formatter: '{b}',
+                position: 'top'
+            }
         }]
     })
 }
@@ -500,6 +565,42 @@ const renderMap = async () => {
     height: 100vh;
     background-color: #f6feff;
     position: relative;
+}
+
+.title-container {
+    height: 50px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    padding: 0px 15px 0px 10px;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+}
+
+.spot-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.spot-image {
+    width: 30px;
+    height: 30px;
+}
+
+.title {
+    font-size: 12px;
+}
+
+.path-info {
+    width: fit-content;
+    font-size: 12px;
+    text-align: right;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 .map-container {

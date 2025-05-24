@@ -1,5 +1,14 @@
 <template>
-    <div class="page-container">
+    <van-popup class="popup" v-model:show="showDiaryPopup" position="bottom" round>
+        <div class="popup-header">
+            <div class="popup-title">相关日记</div>
+            <van-icon class="arrow-button" name="arrow-down" size="25" @click="closePopup" />
+        </div>
+        <div class="popup-content">
+            <Diary type="spot" />
+        </div>
+    </van-popup>
+    <div id="page-container">
         <div class="title-container">
             <van-image class="spot-image" :src="cover" fit="contain" />
             <div class="title">{{ title }}</div>
@@ -31,14 +40,6 @@
             <van-action-bar-icon v-else icon="star-o" text="收藏" @click="handleStar" />
             <van-action-bar-button type="primary" text="相关日记" @click="onClickDiaryAbout" />
         </van-action-bar>
-        <van-popup class="popup" v-model:show="showDiaryPopup" position="bottom" round :style="{ height: '50%' }">
-            <div class="popup-header">
-                <div class="popup-title">相关日记</div>
-            </div>
-            <div class="popup-content">
-                <Diary type="spot" />
-            </div>
-        </van-popup>
     </div>
 </template>
 
@@ -52,7 +53,7 @@ import * as echarts from 'echarts'
 import { showFailToast } from 'vant'
 import Diary from '/src/components/diary/Diary.vue'
 
-const defaultCenter = ref([116.3519, 39.9605])
+const defaultCenter = ref([116.3519, 39.9602])
 const defaultZoom = ref(1.1)
 const scale = ref(1)
 const translateY = ref(0)
@@ -72,7 +73,10 @@ const cover = ref('')
 const route = useRoute()
 const isLoggedIn = ref(false)
 const isStar = ref(false)
-const router = useRouter()
+
+const closePopup = () => {
+    showDiaryPopup.value = false
+}
 
 //所有标点种类
 const pointTypeConfig = {
@@ -106,9 +110,6 @@ const legendConfig = {
     'Essential': { tag: '必要标点', color: '#800000' },
     'All': { tag: '全部标点', color: '#000075' }
 }
-const legendTagToType = Object.fromEntries(
-    Object.entries(legendConfig).map(([type, config]) => [config.tag, type])
-)
 
 //选中第一行图例项
 const switchPointType = (type) => {
@@ -218,7 +219,6 @@ const initMapChart = () => {
         selectedPoint.value = null
         if (params.allSelected[0].name[0]) {
             //用户手动选中建筑
-            updateDestination(params.name)
             selectedBuilding.value = {
                 name: params.name,
                 value: pointGeoJSON.value.features.find(
@@ -231,32 +231,11 @@ const initMapChart = () => {
             })
         } else {
             //用户手动取消选中建筑
-            updateDestination(null)
             selectedBuilding.value = null
         }
     })
 
-    //选中建筑改变，函数调用触发
-    mapChart.value.on('geoselected', (params) => {
-        if (params.name) {
-            //通过搜索选中建筑
-            selectedPoint.value = null
-            selectedBuilding.value = {
-                name: params.name,
-                value: pointGeoJSON.value.features.find(
-                    f => f.properties.name === params.name)?.geometry.coordinates
-            }
-            //取消选中标点
-            mapChart.value.dispatchAction({
-                type: 'select',
-                seriesIndex: 0
-            })
-        } else {
-            //在选中标点时取消选中建筑
-        }
-    })
-
-    //选中标点改变，用户点击和函数调用都会触发
+    //选中标点改变，用户点击触发
     mapChart.value.on('selectchanged', (params) => {
         if (params.isFromClick) {
             if (params.selected && params.selected.length > 0
@@ -266,22 +245,14 @@ const initMapChart = () => {
                 const selectedData = mapChart.value.getOption()
                     .series[0].data[params.selected[0].dataIndex]
                 selectedPoint.value = selectedData
-                updateDestination(selectedData.name)
                 mapChart.value.dispatchAction({
                     type: 'geoSelect',
                     name: null
                 })
             } else {
                 //用户手动取消选中标点
-                updateDestination(null)
                 selectedPoint.value = null
             }
-        } else if (params.selected && params.selected.length > 0) {
-            //通过搜索选中标点
-            mapChart.value.dispatchAction({
-                type: 'geoSelect',
-                name: null
-            })
         } else {
             //在选中建筑时取消选中标点
         }
@@ -436,14 +407,21 @@ const renderMap = async () => {
 
 <style scoped>
 .popup {
-    background-color: #f6feff;
+    height: 70%;
 }
 
 .popup-header {
-    height: 40px;
+    height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
+    background-color: white;
+    position: relative;
+}
+
+.arrow-button {
+    position: absolute;
+    right: 20px;
 }
 
 .popup-title {
@@ -453,17 +431,17 @@ const renderMap = async () => {
 .popup-content {
     height: calc(100% - 50px);
     overflow-y: auto;
+    background-color: #f0f0f0;
 }
 
 .title-container {
     position: absolute;
     top: 0;
     left: 0;
-    height: 80px;
     width: 100%;
+    margin: 20px;
     display: flex;
     align-items: center;
-    justify-content: center;
     gap: 10px;
     z-index: 1;
 }
@@ -477,7 +455,7 @@ const renderMap = async () => {
     font-size: 16px;
 }
 
-.page-container {
+#page-container {
     height: 100vh;
     background-color: #f6feff;
     position: relative;

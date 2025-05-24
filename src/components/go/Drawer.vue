@@ -86,10 +86,14 @@ const updateDestination = (name, tag) => {
     destinationTag.value = tag
 }
 
-defineExpose({ updateDestination })
+const setCongestionIndex = (index) => {
+    toGoListRef.value.setCongestionIndex(index)
+}
 
-const updatePath = (coordinates) => {
-    emit('update-path', coordinates)
+defineExpose({ updateDestination, setCongestionIndex })
+
+const updatePath = (coordinates, time, distance, visitOrder) => {
+    emit('update-path', coordinates, time, distance, visitOrder)
 }
 
 const updateExist = (name) => {
