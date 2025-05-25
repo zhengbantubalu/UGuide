@@ -9,10 +9,13 @@
                 <div class="title">{{ spotName }}</div>
             </div>
             <div class="path-info">
-                <div v-if="showPathTime" style="height: 10px;"></div>
-                <div v-if="showPathTime">{{ Math.floor(pathTime / 60) }} 分 {{ pathTime % 60 }} 秒</div>
+                <div v-if="showPathTime || pathOptimizing" style="height: 10px;"></div>
                 <div v-if="showPathLength">{{ pathLength }} 米</div>
-                <div v-if="!showPathTime" style="height: 10px;"></div>
+                <div v-if="showPathLength && pathOptimizing" style="color: #1989fa;">优化中</div>
+                <div v-if="showPathTime">{{ Math.floor(pathTime / 60) > 0 ?
+                    `${Math.floor(pathTime / 60)} 分 ${pathTime % 60} 秒` :
+                    `${pathTime % 60} 秒` }}</div>
+                <div v-if="!showPathTime && !pathOptimizing" style="height: 10px;"></div>
             </div>
         </div>
         <div class="map-container">
@@ -38,7 +41,7 @@
             </div>
         </div>
         <Drawer ref="drawerRef" @position-change="drawerPositionChange" @update-path="updatePath"
-            @select-destination="selectDestination" />
+            @select-destination="selectDestination" @update-path-optimizing="updatePathOptimizing" />
     </div>
 </template>
 
@@ -74,6 +77,7 @@ const spotName = ref('北京邮电大学')
 const spotLogoUrl = ref('http://47.93.189.31/res/spot/logo/北京邮电大学.png')
 const showPathLength = ref(false)
 const showPathTime = ref(false)
+const pathOptimizing = ref(false)
 
 //所有标点种类
 const pointTypeConfig = {
@@ -145,6 +149,10 @@ const switchLegend = async (type) => {
         displayPointTypes.value = []
     }
     updatePoints()
+}
+
+const updatePathOptimizing = (optimizing) => {
+    pathOptimizing.value = optimizing
 }
 
 //按类别筛选标点时进行排序

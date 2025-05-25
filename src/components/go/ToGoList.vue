@@ -38,7 +38,7 @@
 </template>
 
 <script setup>
-import { pathPlanMulti, pathPlanMultiRemain, pathPlanSingleTime } from '/src/api/path'
+import { pathPlanMulti, pathPlanMultiSa, pathPlanMultiRemain, pathPlanSingleTime } from '/src/api/path'
 import { getToGoList, setToGoList } from '/src/api/togo'
 import { ref } from 'vue'
 import { showFailToast } from 'vant'
@@ -51,34 +51,46 @@ const checkboxLocked = ref(false)
 const congestionIndex = ref(0)
 const showCustomForm = ref(false)
 const customFormData = ref([])
+const lastRequestId = ref(0)
 const infos = ref([
     '仅规划前两个打卡点之间的路线',
     '先到最近的停车点再前往目的地',
     '不会改变打卡列表的顺序',
+    '会根据路程重新排列打卡点顺序',
     '与全自动规划功能一致'
 ])
 const customOptionInfo = ref(infos.value[0])
 const columns = [
     {
-        text: '最短时间',
-        value: 'time',
+        text: '最短时间', value: 'time',
         children: [
-            { text: '步行', value: 'walk' },
-            { text: '自行车', value: 'bike' },
-            { text: '电动车', value: 'e_bike' }
-        ],
+            { text: '步行', value: 'walk', children: [] },
+            { text: '自行车', value: 'bike', children: [] },
+            { text: '电动车', value: 'e_bike', children: [] }
+        ]
     },
     {
-        text: '最短路程',
-        value: 'distance',
+        text: '最短路程', value: 'distance',
         children: [
-            { text: '保持顺序', value: 'remain' },
-            { text: '重新排序', value: 'reorder' }
-        ],
-    },
+            {
+                text: '优化顺序', value: 'reorder',
+                children: [
+                    { text: '返回起点', value: 'return' },
+                    { text: '不返回起点', value: 'n_return' }
+                ]
+            },
+            {
+                text: '保持顺序', value: 'remain',
+                children: [
+                    { text: '返回起点', value: 'return' },
+                    { text: '不返回起点', value: 'n_return' }
+                ]
+            }
+        ]
+    }
 ]
 
-const emit = defineEmits(['update-path'], ['delete'])
+const emit = defineEmits(['update-path'], ['delete'], ['update-path-optimizing'])
 
 const onPickerChange = () => {
     if (customFormData.value[0] === 'time') {
@@ -91,7 +103,11 @@ const onPickerChange = () => {
         if (customFormData.value[1] === 'remain') {
             customOptionInfo.value = infos.value[2]
         } else {
-            customOptionInfo.value = infos.value[3]
+            if (customFormData.value[2] === 'n_return') {
+                customOptionInfo.value = infos.value[3]
+            } else {
+                customOptionInfo.value = infos.value[4]
+            }
         }
     }
 }
@@ -111,12 +127,23 @@ const onPickerConfirm = async () => {
         const validItems = spotList.value.slice(0, spotList.value.length - checkedNum.value)
         const spotNames = validItems.map(item => item.title)
         if (customFormData.value[1] === 'remain') {
-            const { path, distance } = await pathPlanMultiRemain(spotNames)
+            const returnToStart = customFormData.value[2] === 'return'
+            const { path, distance } = await pathPlanMultiRemain(spotNames, returnToStart)
             emit('update-path', path, 0, distance, spotNames)
         } else {
-            const { path, distance, visitOrder } = await pathPlanMulti(spotNames)
+            const returnToStart = customFormData.value[2] === 'return'
+            const { path, distance, visitOrder } = await pathPlanMulti(spotNames, returnToStart)
             emit('update-path', path, 0, distance, [spotNames[0], ...visitOrder])
             updateList(visitOrder)
+
+            const requestId = ++lastRequestId.value
+            emit('update-path-optimizing', true)
+            const { path: optimizedPath, distance: optimizedDistance } = await pathPlanMultiSa(spotNames, returnToStart)
+            if (requestId === lastRequestId.value) {
+                emit('update-path', optimizedPath, 0, optimizedDistance, [spotNames[0], ...visitOrder])
+                updateList(visitOrder)
+                emit('update-path-optimizing', false)
+            }
         }
     }
 }
@@ -229,6 +256,15 @@ const clickPathPlanMulti = async () => {
     const { path, distance, visitOrder } = await pathPlanMulti(spotNames)
     emit('update-path', path, 0, distance, [spotNames[0], ...visitOrder])
     updateList(visitOrder)
+
+    const requestId = ++lastRequestId.value
+    emit('update-path-optimizing', true)
+    const { path: optimizedPath, distance: optimizedDistance } = await pathPlanMultiSa(spotNames, true)
+    if (requestId === lastRequestId.value) {
+        emit('update-path', optimizedPath, 0, optimizedDistance, [spotNames[0], ...visitOrder])
+        updateList(visitOrder)
+        emit('update-path-optimizing', false)
+    }
 }
 
 const moveUp = (index) => {

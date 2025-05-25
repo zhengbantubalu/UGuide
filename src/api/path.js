@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-export const pathPlanMulti = async (names) => {
+export const pathPlanMulti = async (names, returnToStart) => {
     try {
         const response = await axios.post('/api/arith/path/path/multi', {
             'start': {
@@ -8,7 +8,8 @@ export const pathPlanMulti = async (names) => {
             },
             'destinations': names.slice(1).map(name => ({
                 'name': name
-            }))
+            })),
+            'return_to_start': returnToStart
         })
 
         return {
@@ -18,6 +19,33 @@ export const pathPlanMulti = async (names) => {
         }
     } catch (error) {
         console.error('多目的地路径规划时出错:', error)
+        return {
+            path: [],
+            distance: 0,
+            visitOrder: []
+        }
+    }
+}
+
+export const pathPlanMultiSa = async (names, returnToStart) => {
+    try {
+        const response = await axios.post('/api/arith/path/path/multi/sa', {
+            'start': {
+                'name': names[0],
+            },
+            'destinations': names.slice(1).map(name => ({
+                'name': name
+            })),
+            'return_to_start': returnToStart
+        })
+
+        return {
+            path: response.data.path.map(point => [point.longitude, point.latitude]),
+            distance: Math.floor(response.data.distance),
+            visitOrder: response.data.visit_order
+        }
+    } catch (error) {
+        console.error('多目的地模拟退火路径规划时出错:', error)
         return {
             path: [],
             distance: 0,
@@ -50,12 +78,16 @@ export const pathPlanSingle = async (start, end) => {
     }
 }
 
-export const pathPlanMultiRemain = async (names) => {
+export const pathPlanMultiRemain = async (names, returnToStart) => {
     try {
         const requests = []
-        for (let i = 0; i < names.length; i++) {
-            const nextIndex = (i + 1) % names.length
+
+        for (let i = 0; i < names.length - 1; i++) {
+            const nextIndex = i + 1
             requests.push(pathPlanSingle(names[i], names[nextIndex]))
+        }
+        if (returnToStart) {
+            requests.push(pathPlanSingle(names[names.length - 1], names[0]))
         }
 
         const results = await Promise.all(requests)

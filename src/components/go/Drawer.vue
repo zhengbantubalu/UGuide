@@ -31,7 +31,8 @@
         <div class="tab-page">
             <van-tabs v-model:active="activeTab" swipeable :show-header="false">
                 <van-tab>
-                    <ToGoList ref="toGoListRef" @update-path="updatePath" @delete="updateExist" />
+                    <ToGoList ref="toGoListRef" @update-path="updatePath" @delete="updateExist"
+                        @update-path-optimizing="updatePathOptimizing" />
                 </van-tab>
                 <van-tab>
                     <Editor />
@@ -70,7 +71,11 @@ const isEditing = ref(true)
 const inputName = ref('')
 const inputFieldRef = ref(null)
 
-const emit = defineEmits(['position-change'], ['update-path'], ['select-destination'])
+const emit = defineEmits(['position-change'], ['update-path'], ['select-destination'], ['update-path-optimizing'])
+
+const updatePathOptimizing = (pathOptimizing) => {
+    emit('update-path-optimizing', pathOptimizing)
+}
 
 const updateDestination = (name, tag) => {
     if (name && tag) {
