@@ -1,25 +1,37 @@
 import axios from 'axios'
 
 const defaultUrl = 'http://47.93.189.31/res/Carto.jpg'
-const defaultImages = [defaultUrl]
+const defaultImages = [defaultUrl, defaultUrl, defaultUrl, defaultUrl, defaultUrl]
 
 const mapResponse = (response) => {
+    console.log(response)
     return response.data.map(item => ({
         id: item.id,
         title: item.head,
         username: item.username,
-        coverUrl: item.imageurl || defaultUrl,
+        coverUrl: (item.imageurl && item.imageurl.split(',')[0]) || defaultUrl,
         num: item.num
-    })).reverse()
+    }))
 }
 
 export const getAllDiary = async () => {
     try {
         const response = await axios.get('/api/data/diary')
 
-        return mapResponse(response)
+        return mapResponse(response).reverse()
     } catch (error) {
         console.error('获取所有日记时出错:', error)
+        return []
+    }
+}
+
+export const getDiaryBySpotID = async (spotId) => {
+    try {
+        const allDiary = await getAllDiary()
+        return allDiary
+        return allDiary.filter(diary => diary.id === spotId)
+    } catch (error) {
+        console.error('获取景点下的日记时出错:', error)
         return []
     }
 }
@@ -33,7 +45,7 @@ export const getOwnDiary = async () => {
             }
         })
 
-        return mapResponse(response)
+        return mapResponse(response).reverse()
     } catch (error) {
         console.error('获取用户发布日记时出错:', error)
         return []
@@ -72,27 +84,47 @@ export const getStarDiary = async () => {
     }
 }
 
-export const getDiaryBySpotID = async (spotId) => {
+const addDiaryHistory = async (id) => {
     try {
-        const allDiary = await getAllDiary()
-        return allDiary
-        return allDiary.filter(diary => diary.id === spotId)
+        const token = window.localStorage.getItem('token')
+        const response = await axios.get('/api/data/users/info', {
+            headers: {
+                Authorization: token
+            }
+        })
+
+        const historyDiary = response.data.data.historyDiary.split(',')
+        if (historyDiary.includes(id)) {
+            historyDiary.splice(historyDiary.indexOf(id), 1)
+        }
+        historyDiary.push(id)
+        const historyDiaryString = historyDiary.join(',')
+
+        console.log(historyDiaryString)
+
+        axios.post('/api/data/users/changemessage', {
+            historyDiary: historyDiaryString
+        }, {
+            headers: {
+                Authorization: token
+            }
+        })
     } catch (error) {
-        console.error('获取景点下的日记时出错:', error)
-        return []
+        console.error('添加日记历史时出错:', error)
+        return {}
     }
 }
 
 export const getDiaryDetail = async (id) => {
     try {
         const response = await axios.get('/api/data/diary/' + id)
-        console.log(response)
+        // addDiaryHistory(id)
         return {
             id: response.data.id,
             spotId: response.data.spotId,
             title: response.data.head,
             content: response.data.content,
-            imageUrls: response.data.imageurl || defaultImages,
+            imageUrls: (response.data.imageUrl && response.data.imageUrl.split(',')) || defaultImages,
             num: response.data.num
         }
     } catch (error) {
@@ -101,13 +133,14 @@ export const getDiaryDetail = async (id) => {
     }
 }
 
-export const createDiary = async (title, content, imageUrl) => {
+export const createDiary = async (title, content, imageUrl, spotId) => {
     try {
         const token = window.localStorage.getItem('token')
         const response = await axios.post('/api/data/diary/add', {
             head: title,
             content: content,
-            imageUrl: imageUrl
+            imageUrl: imageUrl,
+            spotId: spotId
         }, {
             headers: {
                 Authorization: token
@@ -149,15 +182,44 @@ export const deleteDiary = async (id) => {
 export const starDiary = async (id) => {
     try {
         const token = window.localStorage.getItem('token')
-        const response = await axios.get('/api/data/users/diary/addstar/' + id,
+        axios.get('/api/data/users/diary/addstar/' + id,
             {
                 headers: {
                     Authorization: token
                 }
             }
         )
-        console.log(response)
     } catch (error) {
         console.error('收藏日记时出错:', error)
+    }
+}
+
+export const unstarDiary = async (id) => {
+    try {
+        const token = window.localStorage.getItem('token')
+        axios.post('/api/data/users/stardiary',
+            [id]
+            , {
+                headers: {
+                    Authorization: token
+                }
+            })
+    } catch (error) {
+        console.error('取消收藏日记时出错:', error)
+    }
+}
+
+export const isDiaryStar = async (id) => {
+    try {
+        const token = window.localStorage.getItem('token')
+        const response = await axios.get('/api/data/users/info', {
+            headers: {
+                Authorization: token
+            }
+        })
+
+        return response.data.data.starDiary.split(',').includes(id)
+    } catch (error) {
+        console.error('获取日记是否收藏时出错:', error)
     }
 }

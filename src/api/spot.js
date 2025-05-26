@@ -36,6 +36,53 @@ export const getSpotByID = async (id) => {
     }
 }
 
+export const getFirstStarSpotID = async () => {
+    try {
+        const token = window.localStorage.getItem('token')
+        const response = await axios.get('/api/data/users/info', {
+            headers: {
+                Authorization: token
+            }
+        })
+
+        if (!response.data.success) {
+            return {
+                success: false,
+                state: 'notLogin',
+                message: '请先登录'
+            }
+        }
+
+        const starSpotIDList = response.data.data.starSpot.split(',')
+
+        if (starSpotIDList[0].length === 0) {
+            return {
+                success: true,
+                id: 1
+            }
+            return {
+                success: false,
+                state: 'noStarSpot',
+                message: '请先收藏一个景点'
+            }
+        }
+
+        return {
+            success: true,
+            message: response.data.message,
+            id: starSpotIDList[0]
+        }
+    }
+    catch (error) {
+        console.error('获取首个收藏景点ID时出错:', error)
+        return {
+            success: false,
+            state: 'error',
+            message: '获取景点时出错'
+        }
+    }
+}
+
 export const getStarSpot = async () => {
     try {
         const token = window.localStorage.getItem('token')
@@ -56,10 +103,8 @@ export const getStarSpot = async () => {
 
         const starSpotIDList = response.data.data.starSpot.split(',').map(Number)
 
-        // 创建id到景点的映射
         const spotMap = new Map(allSpots.map(spot => [spot.id, spot]))
 
-        // 按照starSpotIDList的顺序构建结果数组
         return starSpotIDList
             .map(id => spotMap.get(id))
             .filter(spot => spot !== undefined)
@@ -88,5 +133,82 @@ export const setStarSpot = async (starSpot) => {
         return {
             success: false
         }
+    }
+}
+
+export const starSpot = async (id) => {
+    try {
+        const token = window.localStorage.getItem('token')
+        // axios.get('/api/data/users/starspot/' + id,
+        //     {
+        //         headers: {
+        //             Authorization: token
+        //         }
+        //     }
+        // )
+        const response = await axios.get('/api/data/users/info', {
+            headers: {
+                Authorization: token
+            }
+        })
+        if (!response.data.success) {
+            return
+        }
+        const starSpotIDList = response.data.data.starSpot.split(',')
+        if (starSpotIDList.includes(id)) {
+            return
+        }
+        if (starSpotIDList[0].length === 0) {
+            setStarSpot(id)
+        } else {
+            starSpotIDList.push(id)
+            setStarSpot(starSpotIDList.join(','))
+        }
+    } catch (error) {
+        console.error('收藏景点时出错:', error)
+    }
+}
+
+export const unstarSpot = async (id) => {
+    try {
+        const token = window.localStorage.getItem('token')
+        // axios.post('/api/data/users/starspot',
+        //     [id]
+        //     , {
+        //         headers: {
+        //             Authorization: token
+        //         }
+        //     })
+        const response = await axios.get('/api/data/users/info', {
+            headers: {
+                Authorization: token
+            }
+        })
+        if (!response.data.success) {
+            return
+        }
+        const starSpotIDList = response.data.data.starSpot.split(',')
+        if (!starSpotIDList.includes(id)) {
+            return
+        }
+        starSpotIDList.splice(starSpotIDList.indexOf(id), 1)
+        setStarSpot(starSpotIDList.join(','))
+    } catch (error) {
+        console.error('取消收藏景点时出错:', error)
+    }
+}
+
+export const isSpotStar = async (id) => {
+    try {
+        const token = window.localStorage.getItem('token')
+        const response = await axios.get('/api/data/users/info', {
+            headers: {
+                Authorization: token
+            }
+        })
+
+        return response.data.data.starSpot.split(',').includes(id)
+    } catch (error) {
+        console.error('获取景点是否收藏时出错:', error)
     }
 }

@@ -47,8 +47,8 @@
 import { ref, onMounted } from 'vue'
 import { fetchMapJson } from '/src/api/map'
 import { getDistanceOrder } from '/src/api/path'
-import { getSpotByID } from '/src/api/spot'
-import { useRoute, useRouter } from 'vue-router'
+import { getSpotByID, starSpot, unstarSpot, isSpotStar } from '/src/api/spot'
+import { useRoute } from 'vue-router'
 import * as echarts from 'echarts'
 import { showFailToast } from 'vant'
 import Diary from '/src/components/diary/Diary.vue'
@@ -186,15 +186,21 @@ const handleStar = async () => {
         return
     }
     const spotId = route.params.id
-    if (spotId) {
+    if (!isStar.value) {
         await starSpot(spotId)
-        isStar.value = !isStar.value
+        isStar.value = true
+    } else {
+        await unstarSpot(spotId)
+        isStar.value = false
     }
+    await new Promise(resolve => setTimeout(resolve, 500))
+    isStar.value = await isSpotStar(route.params.id)
 }
 
 onMounted(async () => {
     congestionIndex.value = Math.floor(Math.random() * 3)
     isLoggedIn.value = (window.localStorage.getItem('login') === 'true')
+    isStar.value = await isSpotStar(route.params.id)
     const spot = await getSpotByID(route.params.id)
     title.value = spot.title
     cover.value = spot.cover

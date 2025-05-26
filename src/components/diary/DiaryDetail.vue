@@ -9,16 +9,17 @@
         <pre class="diary-content">{{ content }}</pre>
     </div>
     <van-action-bar style="padding: 0 30px;">
-        <van-action-bar-icon v-if="isStar" icon="star" text="已收藏" color="#ff5000" @click="handleStar" />
-        <van-action-bar-icon v-else icon="star-o" text="收藏" @click="handleStar" />
-        <van-action-bar-button type="primary" text="景点详情" @click="onClickSpotDetail" />
+        <van-action-bar-icon v-if="isStar && !isPreview" icon="star" text="已收藏" color="#ff5000" @click="handleStar" />
+        <van-action-bar-icon v-if="!isStar && !isPreview" icon="star-o" text="收藏" @click="handleStar" />
+        <van-action-bar-button v-if="!isPreview" type="primary" text="景点详情" @click="onClickSpotDetail" />
+        <van-action-bar-button v-if="isPreview" type="primary" text="发布" @click="onSubmit" />
     </van-action-bar>
 </template>
 
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getDiaryDetail, starDiary } from '/src/api/diary'
+import { getDiaryDetail, starDiary, unstarDiary, isDiaryStar } from '/src/api/diary'
 import { showFailToast } from 'vant'
 
 const route = useRoute()
@@ -29,6 +30,15 @@ const content = ref('')
 const isStar = ref(false)
 const spotId = ref('')
 const isLoggedIn = ref(false)
+const isPreview = ref(route.path === '/diary/detail/preview')
+
+const onSubmit = async () => {
+    const editor = window.editorInstance
+    if (editor && editor.onSubmit) {
+        await editor.onSubmit()
+    }
+    router.back()
+}
 
 const handleStar = async () => {
     if (!isLoggedIn.value) {
@@ -36,10 +46,15 @@ const handleStar = async () => {
         return
     }
     const diaryId = route.params.id
-    if (diaryId) {
+    if (!isStar.value) {
         await starDiary(diaryId)
-        isStar.value = !isStar.value
+        isStar.value = true
+    } else {
+        await unstarDiary(diaryId)
+        isStar.value = false
     }
+    await new Promise(resolve => setTimeout(resolve, 500))
+    isStar.value = await isDiaryStar(route.params.id)
 }
 
 const onClickSpotDetail = () => {
@@ -53,6 +68,7 @@ const onClickSpotDetail = () => {
 
 onMounted(async () => {
     isLoggedIn.value = (window.localStorage.getItem('login') === 'true')
+    isStar.value = await isDiaryStar(route.params.id)
     if (route.path === '/diary/detail/preview') {
         title.value = localStorage.getItem('draftTitle')
         content.value = localStorage.getItem('draftContent')
@@ -79,7 +95,7 @@ onMounted(async () => {
 .image-container {
     display: flex;
     justify-content: center;
-    background-color: white;
+    background-color: #f6feff;
 }
 
 .diary-container {

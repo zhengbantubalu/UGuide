@@ -44,7 +44,7 @@ const routes = [
         ]
     },
     {
-        path: '/go',
+        path: '/go/:id',
         name: 'Go',
         component: Go
     },

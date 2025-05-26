@@ -11,7 +11,7 @@
             <div class="path-info">
                 <div v-if="showPathTime || pathOptimizing" style="height: 10px;"></div>
                 <div v-if="showPathLength">{{ pathLength }} 米</div>
-                <div v-if="showPathLength && pathOptimizing" style="color: #1989fa;">优化中</div>
+                <div v-if="showPathLength && pathOptimizing" style="color: #1989fa;">路径优化中</div>
                 <div v-if="showPathTime">{{ Math.floor(pathTime / 60) > 0 ?
                     `${Math.floor(pathTime / 60)} 分 ${pathTime % 60} 秒` :
                     `${pathTime % 60} 秒` }}</div>
@@ -41,17 +41,20 @@
             </div>
         </div>
         <Drawer ref="drawerRef" @position-change="drawerPositionChange" @update-path="updatePath"
-            @select-destination="selectDestination" @update-path-optimizing="updatePathOptimizing" />
+            @select-destination="selectDestination" @update-path-optimizing="updatePathOptimizing" :spotID="spotID" />
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onActivated } from 'vue'
+import { useRoute } from 'vue-router'
+import { getSpotByID } from '/src/api/spot'
 import { fetchMapJson } from '/src/api/map'
 import { getDistanceOrder } from '/src/api/path'
 import * as echarts from 'echarts'
 import Drawer from './Drawer.vue'
 
+const route = useRoute()
 const defaultCenter = ref([116.3518, 39.9582])
 const bigCenter = ref([116.3519, 39.96])
 const defaultZoom = ref(0.9)
@@ -73,8 +76,9 @@ const showLabelOrder = ref(false)
 const pathPoints = ref([])
 const pathLength = ref(0)
 const pathTime = ref(63)
-const spotName = ref('北京邮电大学')
-const spotLogoUrl = ref('http://47.93.189.31/res/spot/logo/北京邮电大学.png')
+const spotID = ref(0)
+const spotName = ref('')
+const spotLogoUrl = ref('')
 const showPathLength = ref(false)
 const showPathTime = ref(false)
 const pathOptimizing = ref(false)
@@ -151,6 +155,7 @@ const switchLegend = async (type) => {
     updatePoints()
 }
 
+//显示路径优化中
 const updatePathOptimizing = (optimizing) => {
     pathOptimizing.value = optimizing
 }
@@ -269,7 +274,7 @@ const drawerPositionChange = (position) => {
     }
 }
 
-//选中了目的地，调用子组件更新
+//选中目的地，调用子组件更新
 const updateDestination = (name) => {
     if (!name) {
         drawerRef.value.updateDestination(null, null)
@@ -286,6 +291,17 @@ onMounted(async () => {
     initMapChart()
     await renderMap()
 })
+
+onActivated(async () => {
+    await initSpot()
+})
+
+const initSpot = async () => {
+    spotID.value = route.params.id
+    const spot = await getSpotByID(route.params.id)
+    spotName.value = spot.title
+    spotLogoUrl.value = spot.cover
+}
 
 const initCongestionIndex = () => {
     congestionIndex.value = Math.floor(Math.random() * 3)

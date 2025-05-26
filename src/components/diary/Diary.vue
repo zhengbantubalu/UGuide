@@ -1,5 +1,5 @@
 <template>
-    <div class="page-container">
+    <div class="page-container" ref="containerRef">
         <van-list class="diary-list" :loading="loading" :finished="finished" @load="onLoadList">
             <div class="diary-item" v-for="item in diaryList" @click="goToDetail(item.id)" :key="item.id">
                 <van-image class="diary-image" :src="item.coverUrl" fit="cover" />

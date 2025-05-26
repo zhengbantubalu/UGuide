@@ -35,7 +35,7 @@
                         @update-path-optimizing="updatePathOptimizing" />
                 </van-tab>
                 <van-tab>
-                    <Editor />
+                    <Editor :spotID="spotID" />
                 </van-tab>
                 <van-tab>
                     <Diary type="star" />
@@ -51,10 +51,17 @@
 </template>
 
 <script setup>
-import { ref, nextTick } from 'vue'
+import { ref, defineProps } from 'vue'
 import Diary from '../diary/Diary.vue'
 import ToGoList from './ToGoList.vue'
 import Editor from './Editor.vue'
+
+const props = defineProps({
+    spotID: {
+        type: Number,
+        default: 0
+    }
+})
 
 const showPopup = ref(true)
 const activeTab = ref(0)

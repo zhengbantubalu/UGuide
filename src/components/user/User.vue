@@ -1,5 +1,5 @@
 <template>
-    <div class="page-container">
+    <div class="page-container" ref="containerRef">
         <div class="user-info" @click="goToLogin">
             <van-image round class="user-avatar" :src="avatarUrl" fit="cover" />
             <div class="user-name">{{ username }}</div>

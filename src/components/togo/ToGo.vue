@@ -1,5 +1,5 @@
 <template>
-    <div class="page-container">
+    <div class="page-container" ref="containerRef">
         <van-list class="spot-list" :loading="loading" :finished="finished" @load="onLoadList">
             <div class="spot-item" v-for="(item, index) in spotList" :key="index" @click="goToDetail(item.id)">
                 <van-image class="spot-image" :src="item.cover" fit="contain" />
