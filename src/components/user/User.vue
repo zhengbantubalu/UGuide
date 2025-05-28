@@ -71,13 +71,13 @@ const goToLogin = () => {
     display: flex;
     align-items: center;
     padding: 30px 10px 30px 10px;
-    height: 150px;
+    height: 100px;
     background-color: white;
 }
 
 .user-avatar {
-    width: 90px;
-    height: 90px;
+    width: 80px;
+    height: 80px;
     margin-left: 20px;
     margin-right: 30px;
 }

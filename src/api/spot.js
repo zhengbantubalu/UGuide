@@ -11,7 +11,7 @@ export const getAllSpot = async () => {
             id: item.scenicSpotId,
             title: item.name,
             info: item.info || defaultInfo,
-            heat: item.heat || 0,
+            heat: item.hotnum || 0,
             score: item.score,
             tags: item.tags == null ? [] : String(item.tags).split(','),
             cover: item.imgUr || defaultUrl
@@ -53,17 +53,19 @@ export const getFirstStarSpotID = async () => {
             }
         }
 
+        if (!response.data.data.starSpot) {
+            return {
+                success: true,
+                id: 1
+            }
+        }
+
         const starSpotIDList = response.data.data.starSpot.split(',')
 
         if (starSpotIDList[0].length === 0) {
             return {
                 success: true,
                 id: 1
-            }
-            return {
-                success: false,
-                state: 'noStarSpot',
-                message: '请先收藏一个景点'
             }
         }
 
@@ -139,13 +141,6 @@ export const setStarSpot = async (starSpot) => {
 export const starSpot = async (id) => {
     try {
         const token = window.localStorage.getItem('token')
-        // axios.get('/api/data/users/starspot/' + id,
-        //     {
-        //         headers: {
-        //             Authorization: token
-        //         }
-        //     }
-        // )
         const response = await axios.get('/api/data/users/info', {
             headers: {
                 Authorization: token
@@ -154,7 +149,10 @@ export const starSpot = async (id) => {
         if (!response.data.success) {
             return
         }
-        const starSpotIDList = response.data.data.starSpot.split(',')
+        let starSpotIDList = ['']
+        if (response.data.data.starSpot) {
+            starSpotIDList = response.data.data.starSpot.split(',')
+        }
         if (starSpotIDList.includes(id)) {
             return
         }
@@ -172,13 +170,6 @@ export const starSpot = async (id) => {
 export const unstarSpot = async (id) => {
     try {
         const token = window.localStorage.getItem('token')
-        // axios.post('/api/data/users/starspot',
-        //     [id]
-        //     , {
-        //         headers: {
-        //             Authorization: token
-        //         }
-        //     })
         const response = await axios.get('/api/data/users/info', {
             headers: {
                 Authorization: token
@@ -206,6 +197,10 @@ export const isSpotStar = async (id) => {
                 Authorization: token
             }
         })
+
+        if (!response.data.data.starSpot) {
+            return false
+        }
 
         return response.data.data.starSpot.split(',').includes(id)
     } catch (error) {

@@ -4,7 +4,6 @@ const defaultUrl = 'http://47.93.189.31/res/Carto.jpg'
 const defaultImages = [defaultUrl, defaultUrl, defaultUrl, defaultUrl, defaultUrl]
 
 const mapResponse = (response) => {
-    console.log(response)
     return response.data.map(item => ({
         id: item.id,
         title: item.head,
@@ -25,11 +24,40 @@ export const getAllDiary = async () => {
     }
 }
 
+export const getTopDiary = async () => {
+    try {
+        const response = await axios.get('/api/arith/diary/top_diaries')
+
+        const allDiary = await getAllDiary()
+
+        const ids = response.data.ids
+
+        const topDiary = allDiary.filter(diary => ids.includes(diary.id))
+        topDiary.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
+
+        const otherDiary = allDiary.filter(diary => !ids.includes(diary.id))
+
+        return [...topDiary, ...otherDiary]
+    } catch (error) {
+        console.error('获取按热度排序日记时出错:', error)
+        return []
+    }
+}
+
 export const getDiaryBySpotID = async (spotId) => {
     try {
+        const response = await axios.post('/api/arith/diary/search_by_category', {
+            spot_id: spotId
+        })
+
+        if (response.data.status !== 'success') {
+            return []
+        }
+
         const allDiary = await getAllDiary()
-        return allDiary
-        return allDiary.filter(diary => diary.id === spotId)
+        const ids = response.data.ids
+        return allDiary.filter(diary => ids.includes(diary.id))
+
     } catch (error) {
         console.error('获取景点下的日记时出错:', error)
         return []
@@ -84,41 +112,79 @@ export const getStarDiary = async () => {
     }
 }
 
-const addDiaryHistory = async (id) => {
-    try {
-        const token = window.localStorage.getItem('token')
-        const response = await axios.get('/api/data/users/info', {
-            headers: {
-                Authorization: token
-            }
-        })
-
-        const historyDiary = response.data.data.historyDiary.split(',')
-        if (historyDiary.includes(id)) {
-            historyDiary.splice(historyDiary.indexOf(id), 1)
+const handleSearchResponse = async (response) => {
+    if (response.data.status !== 'success') {
+        return {
+            success: false,
+            data: []
         }
-        historyDiary.push(id)
-        const historyDiaryString = historyDiary.join(',')
+    }
 
-        console.log(historyDiaryString)
+    const allDiary = await getAllDiary()
+    const ids = response.data.ids
+    return {
+        success: true,
+        data: allDiary.filter(diary => ids.includes(diary.id))
+    }
+}
 
-        axios.post('/api/data/users/changemessage', {
-            historyDiary: historyDiaryString
-        }, {
-            headers: {
-                Authorization: token
-            }
+export const getDiaryByExactSearch = async (query) => {
+    try {
+        const response = await axios.post('/api/arith/diary/search', {
+            query: query
         })
+
+        return handleSearchResponse(response)
     } catch (error) {
-        console.error('添加日记历史时出错:', error)
-        return {}
+        console.error('精确搜索日记时出错:', error)
+        return {
+            success: false,
+            data: []
+        }
+    }
+}
+
+export const getDiaryByTitleSearch = async (query) => {
+    try {
+        const response = await axios.post('/api/arith/diary/title_search', {
+            query: query
+        })
+
+        return handleSearchResponse(response)
+    } catch (error) {
+        console.error('搜索日记标题时出错:', error)
+        return {
+            success: false,
+            data: []
+        }
+    }
+}
+
+export const getDiaryBySemanticSearch = async (query) => {
+    try {
+        const response = await axios.post('/api/arith/diary/semantic_search', {
+            query: query
+        })
+
+        return handleSearchResponse(response)
+    } catch (error) {
+        console.error('语义搜索日记时出错:', error)
+        return {
+            success: false,
+            data: []
+        }
     }
 }
 
 export const getDiaryDetail = async (id) => {
     try {
-        const response = await axios.get('/api/data/diary/' + id)
-        // addDiaryHistory(id)
+        const token = window.localStorage.getItem('token')
+        const response = await axios.get('/api/data/diary/' + id, {
+            headers: {
+                Authorization: token
+            }
+        })
+
         return {
             id: response.data.id,
             spotId: response.data.spotId,
@@ -182,13 +248,11 @@ export const deleteDiary = async (id) => {
 export const starDiary = async (id) => {
     try {
         const token = window.localStorage.getItem('token')
-        axios.get('/api/data/users/diary/addstar/' + id,
-            {
-                headers: {
-                    Authorization: token
-                }
+        axios.get('/api/data/users/diary/addstar/' + id, {
+            headers: {
+                Authorization: token
             }
-        )
+        })
     } catch (error) {
         console.error('收藏日记时出错:', error)
     }
@@ -218,8 +282,20 @@ export const isDiaryStar = async (id) => {
             }
         })
 
+        if (!response.data.data.starDiary) {
+            return false
+        }
+
         return response.data.data.starDiary.split(',').includes(id)
     } catch (error) {
         console.error('获取日记是否收藏时出错:', error)
+    }
+}
+
+export const refreshDiarySearch = async () => {
+    try {
+        axios.post('/api/arith/diary/refresh_index')
+    } catch (error) {
+        console.error('刷新日记搜索时出错:', error)
     }
 }

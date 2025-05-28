@@ -18,7 +18,7 @@
 <script setup>
 import { ref, defineProps, onMounted, onUnmounted } from 'vue'
 import { showSuccessToast, showFailToast } from 'vant'
-import { createDiary } from '/src/api/diary'
+import { createDiary, refreshDiarySearch } from '/src/api/diary'
 import { uploadDiaryCover } from '/src/api/file'
 import { useRouter } from 'vue-router'
 
@@ -85,6 +85,7 @@ const onSubmit = async () => {
                         localStorage.removeItem('draftContent')
                         localStorage.removeItem('draftImages')
                         if (res.id != -1) {
+                            refreshDiarySearch()
                             router.replace(`/diary/detail/${res.id}`)
                         }
                     } else {

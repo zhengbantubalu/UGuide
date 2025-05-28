@@ -15,7 +15,12 @@
 <script setup>
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { getAllDiary, getOwnDiary, getHistoryDiary, getStarDiary, getDiaryBySpotID } from '/src/api/diary'
+import {
+    getAllDiary, getTopDiary, getOwnDiary, getHistoryDiary,
+    getStarDiary, getDiaryBySpotID, getDiaryBySemanticSearch,
+    getDiaryByTitleSearch, getDiaryByExactSearch
+} from '/src/api/diary'
+import { showFailToast } from 'vant'
 
 const props = defineProps({
     type: {
@@ -31,6 +36,32 @@ const finished = ref(false)
 const router = useRouter()
 const route = useRoute()
 
+const searchDiary = async (query, option) => {
+    if (query === '') {
+        updateDiaryList()
+        return
+    }
+    let success = false
+    let data = []
+    if (option === 'semantic') {
+        ({ success, data } = await getDiaryBySemanticSearch(query))
+    }
+    else if (option === 'title') {
+        ({ success, data } = await getDiaryByTitleSearch(query))
+    }
+    else if (option === 'exact') {
+        ({ success, data } = await getDiaryByExactSearch(query))
+    }
+    if (success) {
+        diaryList.value = data
+    } else {
+        updateDiaryList()
+        showFailToast('未搜索到结果')
+    }
+}
+
+defineExpose({ searchDiary })
+
 const goToDetail = (id) => {
     router.push(`/diary/detail/${id}`)
 }
@@ -43,7 +74,7 @@ const updateDiaryList = async () => {
     } else if (props.type === 'history') {
         diaryList.value = await getHistoryDiary()
     } else if (router.currentRoute.value.path === '/home/diary') {
-        diaryList.value = await getAllDiary()
+        diaryList.value = await getTopDiary()
     } else if (props.type === 'spot') {
         diaryList.value = await getDiaryBySpotID(route.params.id)
     }

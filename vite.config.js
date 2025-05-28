@@ -19,6 +19,11 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace('/api/arith/path', '/')
       },
+      '/api/arith/diary': {
+        target: 'http://47.93.189.31:8082',
+        changeOrigin: true,
+        rewrite: (path) => path.replace('/api/arith/diary', '/')
+      },
       '/api/upload': {
         target: 'http://47.93.189.31:8090',
         changeOrigin: true,
