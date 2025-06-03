@@ -28,6 +28,11 @@ export default defineConfig({
         target: 'http://47.93.189.31:8090',
         changeOrigin: true,
         rewrite: (path) => path.replace('/api/upload', '/upload')
+      },
+      '/api/ai': {
+        target: 'https://spark-api-open.xf-yun.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace('/api/ai', '/v2/chat/completions')
       }
     }
   }

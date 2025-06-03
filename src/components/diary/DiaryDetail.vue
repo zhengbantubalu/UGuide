@@ -44,7 +44,6 @@ const onSwipeChange = (position) => {
 }
 
 const onShowImagePreview = () => {
-    console.log(swipePosition.value)
     showImagePreview({
         images: imageUrls.value,
         startPosition: swipePosition.value,

@@ -13,6 +13,7 @@
             <van-rate v-model="scoreValue" icon="like" void-icon="like-o" />
         </div>
         <div class="button-container">
+            <van-button round block plain type="success" @click="onGenerate">智能生成</van-button>
             <van-button round block plain type="primary" @click="onPreview">预览</van-button>
             <van-button round block type="primary" native-type="submit">发布</van-button>
         </div>
@@ -23,6 +24,8 @@
 import { ref, defineProps, onMounted, onUnmounted } from 'vue'
 import { showSuccessToast, showFailToast } from 'vant'
 import { createDiary, refreshDiarySearch } from '/src/api/diary'
+import { getToGoList } from '/src/api/togo'
+import { generateDiary } from '/src/api/ai'
 import { uploadDiaryCover } from '/src/api/file'
 import { useRouter } from 'vue-router'
 
@@ -44,6 +47,14 @@ onUnmounted(() => {
 
 const validator = (val) => {
     return val.length >= 30
+}
+
+const onGenerate = async () => {
+    const { data } = await getToGoList()
+    const { title, content } = await generateDiary(data)
+    showSuccessToast('生成完成')
+    editorTitle.value = title
+    editorContent.value = content
 }
 
 const onPreview = () => {
@@ -110,9 +121,9 @@ const onSubmit = async () => {
 
 <style scoped>
 .page-container {
+    padding: 5px 5px 55px 5px;
     display: flex;
     flex-direction: column;
-    padding: 5px 5px 55px 5px;
     gap: 5px;
 }
 

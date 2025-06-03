@@ -195,7 +195,6 @@ const onLoadList = async () => {
     loading.value = false
     const { success, data } = await getToGoList()
     if (success) {
-        console.log(data)
         if (!data) {
             spotList.value = defaultSpotList
         } else {
