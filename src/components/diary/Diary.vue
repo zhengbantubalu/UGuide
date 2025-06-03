@@ -5,7 +5,13 @@
                 <van-image class="diary-image" :src="item.coverUrl" fit="cover" />
                 <div class="diary-content">
                     <div class="diary-title">{{ item.title }}</div>
-                    <van-icon class="diary-username" name="user-o">{{ item.username }}</van-icon>
+                    <div class="diary-info">
+                        <van-icon class="diary-username" name="user-o">{{ item.username }}</van-icon>
+                        <div class="diary-subinfo">
+                            <van-icon class="diary-username" name="eye-o">{{ item.num }}</van-icon>
+                            <van-icon class="diary-username" name="award-o">{{ item.score }}</van-icon>
+                        </div>
+                    </div>
                 </div>
             </div>
         </van-list>
@@ -16,7 +22,7 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import {
-    getAllDiary, getTopDiary, getOwnDiary, getHistoryDiary,
+    getRandomDiary, getTopDiary, getRecommendDiary, getOwnDiary, getHistoryDiary,
     getStarDiary, getDiaryBySpotID, getDiaryBySemanticSearch,
     getDiaryByTitleSearch, getDiaryByExactSearch
 } from '/src/api/diary'
@@ -60,7 +66,20 @@ const searchDiary = async (query, option) => {
     }
 }
 
-defineExpose({ searchDiary })
+const showTopDiary = async () => {
+    diaryList.value = await getTopDiary()
+}
+
+const showRecommendDiary = async () => {
+    if (window.localStorage.getItem('login') === 'true') {
+        diaryList.value = await getRecommendDiary()
+    }
+    else {
+        showFailToast('请先登录')
+    }
+}
+
+defineExpose({ searchDiary, showTopDiary, showRecommendDiary })
 
 const goToDetail = (id) => {
     router.push(`/diary/detail/${id}`)
@@ -74,7 +93,7 @@ const updateDiaryList = async () => {
     } else if (props.type === 'history') {
         diaryList.value = await getHistoryDiary()
     } else if (router.currentRoute.value.path === '/home/diary') {
-        diaryList.value = await getTopDiary()
+        diaryList.value = await getRandomDiary()
     } else if (props.type === 'spot') {
         diaryList.value = await getDiaryBySpotID(route.params.id)
     }
@@ -134,6 +153,17 @@ const onLoadList = async () => {
     line-clamp: 2;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+.diary-info {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+}
+
+.diary-subinfo {
+    display: flex;
+    gap: 5px;
 }
 
 .diary-username {

@@ -70,8 +70,8 @@ const goToLogin = () => {
 .user-info {
     display: flex;
     align-items: center;
-    padding: 30px 10px 30px 10px;
-    height: 100px;
+    padding: 40px 10px 20px 10px;
+    height: 120px;
     background-color: white;
 }
 

@@ -5,7 +5,7 @@
             transition: 'transform 0.3s ease'
         }">
             <div class="spot-title">
-                <van-image class="spot-image" :src="spotLogoUrl" fit="contain" />
+                <van-image class="spot-image" :src="spotLogoUrl" fit="cover" radius="5" />
                 <div class="title">{{ spotName }}</div>
             </div>
             <div class="path-info">

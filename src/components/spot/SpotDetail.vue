@@ -10,7 +10,7 @@
     </van-popup>
     <div id="page-container">
         <div class="title-container">
-            <van-image class="spot-image" :src="cover" fit="contain" />
+            <van-image class="spot-image" :src="cover" fit="cover" radius="10" />
             <div class="title">{{ title }}</div>
         </div>
         <div class="map-container">
@@ -36,8 +36,8 @@
             </div>
         </div>
         <van-action-bar style="padding: 0 30px;">
-            <van-action-bar-icon v-if="isStar" icon="star" text="已收藏" color="#ff5000" @click="handleStar" />
-            <van-action-bar-icon v-else icon="star-o" text="收藏" @click="handleStar" />
+            <van-action-bar-icon v-if="isStar" icon="star" text="已添加" color="#ff5000" @click="handleStar" />
+            <van-action-bar-icon v-else icon="star-o" text="想去" @click="handleStar" />
             <van-action-bar-button type="primary" text="相关日记" @click="onClickDiaryAbout" />
         </van-action-bar>
     </div>

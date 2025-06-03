@@ -89,6 +89,16 @@ const columns = [
         ]
     }
 ]
+const defaultSpotList = [
+    { title: '西门', tag: '大门' },
+    { title: '自邮制造', tag: '商店' },
+    { title: '主席像', tag: '景观' },
+    { title: '图书馆', tag: '建筑' },
+    { title: '主教学楼', tag: '教学楼' },
+    { title: '学6公寓', tag: '宿舍' },
+    { title: '田径场', tag: '运动场' },
+    { title: '麦当劳', tag: '餐厅' },
+]
 
 const emit = defineEmits(['update-path'], ['delete'], ['update-path-optimizing'])
 
@@ -185,16 +195,18 @@ const onLoadList = async () => {
     loading.value = false
     const { success, data } = await getToGoList()
     if (success) {
-        if (data.length === 0) {
-            spotList.value = []
+        console.log(data)
+        if (!data) {
+            spotList.value = defaultSpotList
         } else {
             spotList.value = data.split(',').map(item => {
                 const [title, tag, checked] = item.split('|')
                 return { title, tag, checked: checked === '1' }
             })
         }
-
         checkedNum.value = spotList.value.filter(item => item.checked).length
+    } else {
+        spotList.value = defaultSpotList
     }
 }
 

@@ -1,19 +1,37 @@
 import axios from 'axios'
 
-const defaultUrl = 'http://47.93.189.31/res/Carto.jpg'
+const defaultUrl = 'http://47.93.189.31/res/diary/Carto.jpg'
 const defaultImages = [defaultUrl, defaultUrl, defaultUrl, defaultUrl, defaultUrl]
 
 const mapResponse = (response) => {
-    return response.data.map(item => ({
-        id: item.id,
-        title: item.head,
-        username: item.username,
-        coverUrl: (item.imageurl && item.imageurl.split(',')[0]) || defaultUrl,
-        num: item.num
-    }))
+    return response.data.map(item => {
+        const originalCoverUrl = (item.imageurl && item.imageurl.split(',')[0]) || defaultUrl
+        const coverUrl = originalCoverUrl.replace('/diary/', '/diary/thumb/')
+
+        return {
+            id: item.id,
+            title: item.head,
+            username: item.username,
+            coverUrl: coverUrl,
+            num: item.num || 0,
+            score: item.score || 0
+        }
+    })
 }
 
-export const getAllDiary = async () => {
+const getDiaryByIDs = async (ids) => {
+    try {
+        const response = await axios.post('/api/data/diary/get', ids)
+
+        return mapResponse(response)
+    }
+    catch (error) {
+        console.error('根据id获取日记列表时出错:', error)
+        return []
+    }
+}
+
+const getAllDiary = async () => {
     try {
         const response = await axios.get('/api/data/diary')
 
@@ -24,22 +42,14 @@ export const getAllDiary = async () => {
     }
 }
 
-export const getTopDiary = async () => {
+export const getRandomDiary = async () => {
     try {
-        const response = await axios.get('/api/arith/diary/top_diaries')
-
         const allDiary = await getAllDiary()
-
-        const ids = response.data.ids
-
-        const topDiary = allDiary.filter(diary => ids.includes(diary.id))
-        topDiary.sort((a, b) => ids.indexOf(a.id) - ids.indexOf(b.id))
-
-        const otherDiary = allDiary.filter(diary => !ids.includes(diary.id))
-
-        return [...topDiary, ...otherDiary]
-    } catch (error) {
-        console.error('获取按热度排序日记时出错:', error)
+        return allDiary
+        return allDiary.sort(() => Math.random() - 0.5).slice(0, 20)
+    }
+    catch (error) {
+        console.error('获取随机日记时出错:', error)
         return []
     }
 }
@@ -54,10 +64,7 @@ export const getDiaryBySpotID = async (spotId) => {
             return []
         }
 
-        const allDiary = await getAllDiary()
-        const ids = response.data.ids
-        return allDiary.filter(diary => ids.includes(diary.id))
-
+        return getDiaryByIDs(response.data.ids)
     } catch (error) {
         console.error('获取景点下的日记时出错:', error)
         return []
@@ -120,11 +127,9 @@ const handleSearchResponse = async (response) => {
         }
     }
 
-    const allDiary = await getAllDiary()
-    const ids = response.data.ids
     return {
         success: true,
-        data: allDiary.filter(diary => ids.includes(diary.id))
+        data: await getDiaryByIDs(response.data.ids)
     }
 }
 
@@ -173,6 +178,41 @@ export const getDiaryBySemanticSearch = async (query) => {
             success: false,
             data: []
         }
+    }
+}
+
+export const getTopDiary = async () => {
+    try {
+        const response = await axios.get('/api/arith/diary/top_diaries')
+
+        return getDiaryByIDs(response.data.ids)
+    } catch (error) {
+        console.error('获取按热度排序日记时出错:', error)
+        return []
+    }
+}
+
+export const getRecommendDiary = async () => {
+    try {
+        const token = window.localStorage.getItem('token')
+        const userRes = await axios.get('/api/data/users/info', {
+            headers: {
+                Authorization: token
+            }
+        })
+
+        if (!userRes.data.success) {
+            return []
+        }
+
+        const response = await axios.post('/api/arith/diary/diary/recommend', {
+            user_id: userRes.data.data.id
+        })
+
+        return getDiaryByIDs(response.data.ids)
+    } catch (error) {
+        console.error('获取个性化推荐日记时出错:', error)
+        return []
     }
 }
 
@@ -237,13 +277,9 @@ export const createDiary = async (title, content, imageUrl, spotId) => {
     }
 }
 
-export const updateDiary = async (id, title, content, imageUrls) => {
+export const updateDiary = async (id, title, content, imageUrls) => { }
 
-}
-
-export const deleteDiary = async (id) => {
-
-}
+export const deleteDiary = async (id) => { }
 
 export const starDiary = async (id) => {
     try {

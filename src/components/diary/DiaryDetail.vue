@@ -1,5 +1,5 @@
 <template>
-    <van-swipe class="swipe" :autoplay="0" lazy-render>
+    <van-swipe class="swipe" :autoplay="5000" lazy-render @click="onShowImagePreview" @change="onSwipeChange">
         <van-swipe-item class="image-container" v-for="(image, index) in imageUrls" :key="index">
             <van-image :src="image" fit="contain" />
         </van-swipe-item>
@@ -7,6 +7,11 @@
     <div class="diary-container">
         <h1 class="diary-title">{{ title }}</h1>
         <pre class="diary-content">{{ content }}</pre>
+        <div v-if="!isPreview" class="rate-container">
+            <div style="color: #1989fa; font-size: 12px;">给本篇日记打个分吧</div>
+            <van-rate v-model="scoreValue" icon="like" void-icon="like-o" />
+            <van-button plain round type="primary" size="small" @click="onScore">提交评分</van-button>
+        </div>
     </div>
     <van-action-bar style="padding: 0 30px;">
         <van-action-bar-icon v-if="isStar && !isPreview" icon="star" text="已收藏" color="#ff5000" @click="handleStar" />
@@ -20,7 +25,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getDiaryDetail, starDiary, unstarDiary, isDiaryStar } from '/src/api/diary'
-import { showFailToast } from 'vant'
+import { showFailToast, showSuccessToast, showImagePreview } from 'vant'
 
 const route = useRoute()
 const router = useRouter()
@@ -31,6 +36,29 @@ const isStar = ref(false)
 const spotId = ref('')
 const isLoggedIn = ref(false)
 const isPreview = ref(route.path === '/diary/detail/preview')
+const scoreValue = ref(0)
+const swipePosition = ref(0)
+
+const onSwipeChange = (position) => {
+    swipePosition.value = position
+}
+
+const onShowImagePreview = () => {
+    console.log(swipePosition.value)
+    showImagePreview({
+        images: imageUrls.value,
+        startPosition: swipePosition.value,
+        closeable: true
+    })
+}
+
+const onScore = async () => {
+    if (!isLoggedIn.value) {
+        showFailToast('请先登录')
+        return
+    }
+    showSuccessToast('感谢您的评分')
+}
 
 const onSubmit = async () => {
     const editor = window.editorInstance
@@ -114,5 +142,14 @@ onMounted(async () => {
     word-wrap: break-word;
     overflow-wrap: break-word;
     font-family: inherit;
+}
+
+.rate-container {
+    margin: 40px 0px 0px 0px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 15px
 }
 </style>

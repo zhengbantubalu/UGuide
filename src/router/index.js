@@ -1,15 +1,15 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../components/Home.vue'
-import Diary from '../components/diary/Diary.vue'
 import Spot from '../components/spot/Spot.vue'
+import SpotDetail from '../components/spot/SpotDetail.vue'
+import StarSpot from '../components/spot/StarSpot.vue'
+import Diary from '../components/diary/Diary.vue'
+import DiaryDetail from '../components/diary/DiaryDetail.vue'
 import Go from '../components/go/Go.vue'
-import ToGo from '../components/togo/ToGo.vue'
 import User from '../components/user/User.vue'
 import Login from '../components/user/Login.vue'
 import Register from '../components/user/Register.vue'
 import UserInfo from '../components/user/UserInfo.vue'
-import DiaryDetail from '../components/diary/DiaryDetail.vue'
-import SpotDetail from '../components/spot/SpotDetail.vue'
 
 const routes = [
     {
@@ -34,7 +34,7 @@ const routes = [
             {
                 path: 'togo',
                 name: 'ToGo',
-                component: ToGo
+                component: StarSpot
             },
             {
                 path: 'user',

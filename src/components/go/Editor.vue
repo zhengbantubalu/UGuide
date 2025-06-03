@@ -8,6 +8,10 @@
         </div>
         <van-field class="content-editor" v-model="editorContent" autosize type="textarea" maxlength="1000"
             show-word-limit placeholder="随手写下旅行中的见闻和感受吧" :rules="[{ validator, message: '请至少填写30字' }]" />
+        <div class="rate-container">
+            <div style="color: #1989fa; font-size: 12px;">给景点打个分吧</div>
+            <van-rate v-model="scoreValue" icon="like" void-icon="like-o" />
+        </div>
         <div class="button-container">
             <van-button round block plain type="primary" @click="onPreview">预览</van-button>
             <van-button round block type="primary" native-type="submit">发布</van-button>
@@ -26,6 +30,7 @@ const fileList = ref([])
 const editorTitle = ref('')
 const editorContent = ref('')
 const router = useRouter()
+const scoreValue = ref(0)
 
 onMounted(() => {
     window.editorInstance = {
@@ -140,9 +145,19 @@ const onSubmit = async () => {
 }
 
 .button-container {
-    padding: 0px 5px;
+    padding: 0px 10px;
     display: flex;
     justify-content: space-between;
     gap: 10px;
+}
+
+.rate-container {
+    background-color: white;
+    border-radius: 10px;
+    padding: 10px 0px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 15px
 }
 </style>

@@ -13,9 +13,7 @@ export const getUserInfo = async () => {
             success: response.data.success,
             data: {
                 username: response.data.data.username,
-                avatarUrl: response.data.data.imageUrl,
-                ownDiary: response.data.data.ownDiary,
-                starSpot: response.data.data.starSpot
+                avatarUrl: response.data.data.imageUrl
             }
         }
     } catch (error) {

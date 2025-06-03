@@ -2,7 +2,7 @@
     <div class="page-container" ref="containerRef">
         <van-list class="spot-list" :loading="loading" :finished="finished" @load="onLoadList">
             <div class="spot-item" v-for="(item, index) in spotList" :key="index" @click="goToDetail(item.id)">
-                <van-image class="spot-image" :src="item.cover" fit="contain" />
+                <van-image class="spot-image" :src="item.cover" fit="cover" radius="10" />
                 <div class="spot-content">
                     <div class="spot-title">{{ item.title }}</div>
                     <div class="spot-info">{{ item.info }}</div>
@@ -82,7 +82,8 @@ const moveDown = (index) => {
 .spot-item {
     display: flex;
     align-items: center;
-    padding: 0px 20px;
+    gap: 20px;
+    padding: 0 10px 0px 20px;
     height: 120px;
     border-radius: 10px;
     overflow: hidden;
@@ -91,12 +92,13 @@ const moveDown = (index) => {
 }
 
 .spot-image {
+    min-width: 80px;
     width: 80px;
     height: 80px;
-    margin-right: 20px;
 }
 
 .spot-content {
+    max-width: 50%;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -105,14 +107,17 @@ const moveDown = (index) => {
 }
 
 .spot-title {
+    width: 100%;
     color: black;
-    font-size: 18px;
-    font-weight: bold;
+    font-size: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .spot-info {
     color: #666;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .spot-tags {

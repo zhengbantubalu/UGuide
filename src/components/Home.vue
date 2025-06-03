@@ -1,4 +1,5 @@
 <template>
+    <!-- 顶部导航栏 -->
     <van-nav-bar v-if="currentRoute === '/home/diary' || currentRoute === '/home/spot'" right-text="搜索"
         :right-disabled="searchBtnDisabled" @click-right="onSearch" z-index="5">
         <template #left>
@@ -10,13 +11,20 @@
                 @focus="searchBtnDisabled = false" />
         </template>
     </van-nav-bar>
-    <van-nav-bar v-else-if="currentRoute === '/home/togo'" title="想去" />
-    <van-nav-bar v-else-if="currentRoute === '/home/user'" title="我的" />
+    <van-nav-bar v-else-if="currentRoute === '/home/togo'" title="想去">
+        <template #left>
+            <van-image round class="user-avatar" :src="avatarUrl" :show-loading="false" fit="cover" />
+        </template>
+    </van-nav-bar>
+    <!-- 主页 -->
     <router-view class="home-page" v-slot="{ Component }" v-if="currentRoute === '/home/diary'">
         <component :is="Component" ref="diaryRef" />
     </router-view>
+    <router-view class="home-page" v-slot="{ Component }" v-else-if="currentRoute === '/home/spot'">
+        <component :is="Component" ref="spotRef" />
+    </router-view>
     <router-view class="home-page" v-else />
-    <van-button class="back-to-top" icon="back-top" @click="scrollToTop" round />
+    <!-- 底部导航栏 -->
     <van-tabbar route :border="false">
         <van-tabbar-item replace icon="medal" to="/home/diary" @click="scrollToTop">发现</van-tabbar-item>
         <van-tabbar-item replace icon="location" to="/home/spot" @click="scrollToTop">景点</van-tabbar-item>
@@ -26,20 +34,31 @@
         <van-tabbar-item replace icon="star" to="/home/togo" @click="scrollToTop">想去</van-tabbar-item>
         <van-tabbar-item replace icon="user" to="/home/user" @click="scrollToTop">我的</van-tabbar-item>
     </van-tabbar>
+    <!-- 回到顶部 -->
+    <van-button class="back-to-top" icon="back-top" @click="scrollToTop" round />
+    <!-- 弹出层 -->
     <van-popup class="popup" v-model:show="showDiaryFilter" round position="top" z-index="3">
         <van-checkbox-group class="checkbox-group" v-model="diarySearchType" direction="horizontal"
             @change="handleDiaryCheckboxChange">
-            <van-checkbox name="exact">全文精确匹配</van-checkbox>
-            <van-checkbox name="title">标题精确匹配</van-checkbox>
+            <van-checkbox name="semantic">智能搜索</van-checkbox>
+            <van-checkbox name="exact">精确匹配</van-checkbox>
+            <van-checkbox name="title">只搜标题</van-checkbox>
         </van-checkbox-group>
+        <div class="button-container">
+            <van-button round block plain type="primary" @click="onShowTopDiary">热门排行</van-button>
+            <van-button round block type="primary" @click="onShowRecommendDiary">为我推荐</van-button>
+        </div>
     </van-popup>
     <van-popup class="popup" v-model:show="showSpotFilter" round position="top" z-index="3">
         <van-checkbox-group class="checkbox-group" v-model="spotSearchType" direction="horizontal"
             @change="handleSpotCheckboxChange">
-            <van-checkbox name="exact">选项一</van-checkbox>
-            <van-checkbox name="title">选项二</van-checkbox>
-            <van-checkbox name="fds">选项三</van-checkbox>
+            <van-checkbox name="name">搜名称</van-checkbox>
+            <van-checkbox name="tag">搜标签</van-checkbox>
         </van-checkbox-group>
+        <div class="button-container">
+            <van-button round block plain type="primary" @click="onShowTopSpot">热门排行</van-button>
+            <van-button round block type="primary" @click="onShowRecommendSpot">为我推荐</van-button>
+        </div>
     </van-popup>
 </template>
 
@@ -58,27 +77,49 @@ const searchBtnDisabled = ref(true)
 const searchRef = ref(null)
 const currentRoute = computed(() => route.path)
 const diaryRef = ref(null)
+const spotRef = ref(null)
 const showDiaryFilter = ref(false)
 const showSpotFilter = ref(false)
-const diarySearchType = ref([])
-const spotSearchType = ref([])
+const diarySearchType = ref(['semantic'])
+const spotSearchType = ref(['name'])
+const diarySearchLastType = ref('semantic')
+const spotSearchLastType = ref('name')
 
 const scrollToTop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
+const onShowTopDiary = () => {
+    diaryRef.value.showTopDiary()
+    showDiaryFilter.value = false
+}
+
+const onShowRecommendDiary = () => {
+    diaryRef.value.showRecommendDiary()
+    showDiaryFilter.value = false
+}
+
+const onShowTopSpot = () => {
+    spotRef.value.showTopSpot()
+    showSpotFilter.value = false
+}
+
+const onShowRecommendSpot = () => {
+    spotRef.value.showRecommendSpot()
+    showSpotFilter.value = false
+}
+
 const onSearch = async () => {
     const query = searchValue.value
     if (currentRoute.value === '/home/diary') {
-        let option = 'semantic'
-        if (diarySearchType.value.length !== 0) {
-            option = diarySearchType.value[0]
-        }
-        diaryRef.value.searchDiary(query, option)
+        diaryRef.value.searchDiary(query, diarySearchType.value[0])
+    } else if (currentRoute.value === '/home/spot') {
+        spotRef.value.searchSpot(query, spotSearchType.value[0])
     }
     searchRef.value.blur()
     searchBtnDisabled.value = true
     showDiaryFilter.value = false
+    showSpotFilter.value = false
 }
 
 const handleFilter = () => {
@@ -97,14 +138,20 @@ const handleFilter = () => {
 }
 
 const handleDiaryCheckboxChange = (names) => {
-    if (names.length > 1) {
-        diarySearchType.value = [names[names.length - 1]]
+    if (names.length === 0) {
+        diarySearchType.value = [diarySearchLastType.value]
+    } else if (names.length > 1) {
+        diarySearchType.value = names.filter(name => name !== diarySearchLastType.value)
+        diarySearchLastType.value = diarySearchType.value[0]
     }
 }
 
 const handleSpotCheckboxChange = (names) => {
-    if (names.length > 1) {
-        spotSearchType.value = [names[names.length - 1]]
+    if (names.length === 0) {
+        spotSearchType.value = [spotSearchLastType.value]
+    } else if (names.length > 1) {
+        spotSearchType.value = names.filter(name => name !== spotSearchLastType.value)
+        spotSearchLastType.value = spotSearchType.value[0]
     }
 }
 
@@ -185,13 +232,29 @@ const go = async () => {
 }
 
 .popup {
-    padding: 60px 40px 15px 40px;
+    padding: 60px 10px 15px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
 }
 
 .checkbox-group {
     display: flex;
     align-items: center;
+    gap: 20px;
+}
+
+.button-container {
+    width: 100%;
+    padding: 0px 5px;
+    display: flex;
     justify-content: space-between;
+    gap: 10px;
+}
+
+:deep(.van-nav-bar__title) {
+    font-weight: normal;
 }
 
 :deep(.van-nav-bar__left) {

@@ -2,7 +2,7 @@
     <div class="page-container" ref="containerRef">
         <van-list class="spot-list" :loading="loading" :finished="finished" @load="onLoadList">
             <div class="spot-item" v-for="item in spotList" @click="goToDetail(item.id)">
-                <van-image class="spot-image" :src="item.cover" fit="contain" />
+                <van-image class="spot-image" :src="item.cover" fit="cover" radius="10" />
                 <div class="spot-content">
                     <div class="spot-title">{{ item.title }}</div>
                     <div class="spot-info">{{ item.info }}</div>
@@ -22,19 +22,59 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { getAllSpot } from '/src/api/spot'
+import {
+    getRandomSpot, getTopSpot, getRecommendSpot,
+    getSpotByNameSearch, getSpotByTagSearch
+} from '/src/api/spot'
+import { showFailToast } from 'vant'
 
 const spotList = ref([])
 const loading = ref(false)
 const finished = ref(false)
 const router = useRouter()
 
+const searchSpot = async (query, option) => {
+    if (query === '') {
+        updateSpotList()
+        return
+    }
+    let success = false
+    let data = []
+    if (option === 'name') {
+        ({ success, data } = await getSpotByNameSearch(query))
+    }
+    else if (option === 'tag') {
+        ({ success, data } = await getSpotByTagSearch(query))
+    }
+    if (success) {
+        spotList.value = data
+    } else {
+        updateSpotList()
+        showFailToast('未搜索到结果')
+    }
+}
+
+const showTopSpot = async () => {
+    spotList.value = await getTopSpot()
+}
+
+const showRecommendSpot = async () => {
+    if (window.localStorage.getItem('login') === 'true') {
+        spotList.value = await getRecommendSpot()
+    }
+    else {
+        showFailToast('请先登录')
+    }
+}
+
+defineExpose({ searchSpot, showTopSpot, showRecommendSpot })
+
 const goToDetail = (id) => {
     router.push(`/spot/detail/${id}`)
 }
 
 const updateSpotList = async () => {
-    spotList.value = await getAllSpot()
+    spotList.value = await getRandomSpot()
     finished.value = true
     loading.value = false
 }
@@ -60,20 +100,23 @@ const onLoadList = async () => {
 .spot-item {
     display: flex;
     align-items: center;
+    gap: 20px;
     padding: 0 10px 0px 20px;
     height: 120px;
     border-radius: 10px;
     overflow: hidden;
     background-color: white;
+    justify-content: space-between;
 }
 
 .spot-image {
+    min-width: 80px;
     width: 80px;
     height: 80px;
-    margin-right: 20px;
 }
 
 .spot-content {
+    max-width: 50%;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -82,14 +125,17 @@ const onLoadList = async () => {
 }
 
 .spot-title {
+    width: 100%;
     color: black;
-    font-size: 18px;
-    font-weight: bold;
+    font-size: 16px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    overflow: hidden;
 }
 
 .spot-info {
     color: #666;
-    font-size: 14px;
+    font-size: 12px;
 }
 
 .spot-tags {
@@ -103,6 +149,7 @@ const onLoadList = async () => {
     align-items: flex-start;
     gap: 10px;
     width: 60px;
+    min-width: 60px;
 }
 
 .spot-heat {
